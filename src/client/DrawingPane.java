@@ -198,6 +198,7 @@ public class DrawingPane {
 
         g.dispose();
         this.imageLabel.repaint();
+        dirty = true;
         lastPoint1 = point;
         lastPoint2 = lastPoint1;
     }
