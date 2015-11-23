@@ -23,7 +23,7 @@ public class DrawingPane {
     private JPanel gui;
     /** The color to use when calling clear, text or other
      * drawing functionality. */
-    private Color color = Color.WHITE;
+    private Color color = Color.BLACK;
     /** General user messages. */
     private JLabel output = new JLabel("DrawApp");
 
@@ -77,7 +77,7 @@ public class DrawingPane {
 
             ActionListener colorListener = event -> {
                 Color c = JColorChooser.showDialog(
-                        gui, "Choose a color", color);
+                        gui, "Choose a color", Color.BLACK);
                 if (c != null) {
                     setColor(c);
                 }
@@ -120,7 +120,7 @@ public class DrawingPane {
                             gui, "Erase the current painting?");
                 }
                 if (result == JOptionPane.OK_OPTION) {
-                    clear(canvasImage);
+                    clear(canvasImage, Color.WHITE);
                 }
             };
 
@@ -133,8 +133,8 @@ public class DrawingPane {
             activeTool = DRAW_TOOL;
 
             gui.add(output, BorderLayout.PAGE_END);
-            clear(colorSample);
-            clear(canvasImage);
+            clear(colorSample, color);
+            clear(canvasImage, Color.WHITE);
 
             // TODO: Initialize to drawing for debugging purposes only. Server will determine current state
             STATE = State.DRAWING;
@@ -143,11 +143,10 @@ public class DrawingPane {
         return gui;
     }
 
-    /** Clears the entire image area by painting it with the current color. */
-    public void clear(BufferedImage bufferedImage) {
+    public void clear(BufferedImage bufferedImage, Color c) {
         Graphics2D graphics = bufferedImage.createGraphics();
         graphics.setRenderingHints(renderingHints);
-        graphics.setColor(Color.WHITE);
+        graphics.setColor(c);
         graphics.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
 
         graphics.dispose();
@@ -177,7 +176,7 @@ public class DrawingPane {
     /** Set the current painting color and refresh any elements needed. */
     public void setColor(Color color) {
         this.color = color;
-        clear(colorSample);
+        clear(colorSample, color);
     }
 
     public void draw(Point point) {
