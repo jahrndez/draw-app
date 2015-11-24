@@ -11,6 +11,7 @@ public class Session {
     private final int sessionId;
     private Map<InetAddress, String> ipToUsername;
     private Map<InetAddress, Integer> ipToPoints;
+    private InetAddress host;
     private InetAddress currentDrawer;
 
     public Session (int sessionId) {
