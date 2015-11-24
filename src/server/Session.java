@@ -2,6 +2,7 @@ package server;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a game session
@@ -14,6 +15,8 @@ public class Session {
 
     public Session (int sessionId) {
         this.sessionId = sessionId;
+        this.ipToUsername = new ConcurrentHashMap<>();
+        this.ipToPoints = new ConcurrentHashMap<>();
     }
 
     public int getSessionId() {
@@ -29,5 +32,20 @@ public class Session {
     public synchronized boolean addPlayer(InetAddress ipAddress, String userName) {
         // TODO: Implement
         return false;
+    }
+
+    public synchronized int numPlayers() {
+        return ipToUsername.size();
+    }
+
+    public synchronized int getPlayerPoints(InetAddress player) {
+        return ipToPoints.get(player);
+    }
+
+    /**
+     * Called once per session
+     */
+    public synchronized void start() {
+
     }
 }

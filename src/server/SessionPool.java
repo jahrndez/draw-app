@@ -46,4 +46,11 @@ public class SessionPool {
         sessions.put(id, new Session(id));
         return sessions.get(id);
     }
+
+    /**
+     * Removes Session with specified Id. Silently does nothing if Id does not exist
+     */
+    public synchronized void removeSession(int id) {
+        sessions.remove(id);
+    }
 }
