@@ -1,6 +1,6 @@
 package server;
 
-import interfaces.NewUserRequest;
+import interfaces.CreateJoinRequest;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,7 +43,7 @@ public class Dispatch {
         @Override
         public void run() {
             try {
-                NewUserRequest newUserRequest = (NewUserRequest) objectInputStream.readObject();
+                CreateJoinRequest createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
                 shutDownResources();
