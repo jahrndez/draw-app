@@ -7,12 +7,17 @@ import java.util.Map;
  * Represents a game session
  */
 public class Session {
+    private final int sessionId;
     private Map<InetAddress, String> ipToUsername;
     private Map<InetAddress, Integer> ipToPoints;
     private InetAddress currentDrawer;
 
-    public Session () {
+    public Session (int sessionId) {
+        this.sessionId = sessionId;
+    }
 
+    public int getSessionId() {
+        return this.sessionId;
     }
 
     /**
