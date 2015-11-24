@@ -23,15 +23,13 @@ public class DrawingPane {
     private JPanel gui;
     /** The color to use when calling clear, text or other
      * drawing functionality. */
-    private Color color = Color.BLACK;
+    private Color currentColor = Color.BLACK;
     /** General user messages. */
     private JLabel output = new JLabel("DrawApp");
 
     private BufferedImage colorSample = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
 
     private JLabel imageLabel;
-    private int activeTool;
-    public static final int DRAW_TOOL = 0;
 
     private boolean dirty = false;
     private Stroke stroke = new BasicStroke(
@@ -58,11 +56,11 @@ public class DrawingPane {
             renderingHints = new RenderingHints(hintsMap);
 
             setImage(new BufferedImage(960, 640, BufferedImage.TYPE_INT_RGB));
-            gui = new JPanel(new BorderLayout(4,4));
+            gui = new JPanel(new BorderLayout(4, 4));
             gui.setBorder(new EmptyBorder(5, 3, 5, 3));
 
             JPanel imageView = new JPanel(new GridBagLayout());
-            imageView.setPreferredSize(new Dimension(1000,700));
+            imageView.setPreferredSize(new Dimension(1000, 700));
             imageLabel = new JLabel(new ImageIcon(canvasImage));
             JScrollPane imageScroll = new JScrollPane(imageView);
             imageView.add(imageLabel);
@@ -70,27 +68,26 @@ public class DrawingPane {
             imageLabel.addMouseListener(new ImageMouseListener());
             gui.add(imageScroll, BorderLayout.CENTER);
 
-            JToolBar tb = new JToolBar();
-            tb.setFloatable(false);
+            JToolBar toolBar = new JToolBar();
+            toolBar.setFloatable(false);
             JButton colorButton = new JButton("Color");
             colorButton.setToolTipText("Choose a Color");
 
             ActionListener colorListener = event -> {
-                Color c = JColorChooser.showDialog(
+                Color color = JColorChooser.showDialog(
                         gui, "Choose a color", Color.BLACK);
-                if (c != null) {
-                    setColor(c);
+                if (color != null) {
+                    setColor(color);
                 }
             };
 
             colorButton.addActionListener(colorListener);
             colorButton.setIcon(new ImageIcon(colorSample));
-            tb.add(colorButton);
+            toolBar.add(colorButton);
 
-            setColor(color);
+            setColor(currentColor);
 
-            final SpinnerNumberModel strokeModel =
-                    new SpinnerNumberModel(3,1,16,1);
+            final SpinnerNumberModel strokeModel = new SpinnerNumberModel(3, 1, 16, 1);
             JSpinner strokeSize = new JSpinner(strokeModel);
 
             ChangeListener strokeListener = event -> {
@@ -108,10 +105,10 @@ public class DrawingPane {
             JLabel strokeLabel = new JLabel("Stroke");
             strokeLabel.setLabelFor(strokeSize);
             strokeLabel.setDisplayedMnemonic('t');
-            tb.add(strokeLabel);
-            tb.add(strokeSize);
+            toolBar.add(strokeLabel);
+            toolBar.add(strokeSize);
 
-            tb.addSeparator();
+            toolBar.addSeparator();
 
             ActionListener clearListener = event -> {
                 int result = JOptionPane.OK_OPTION;
@@ -119,21 +116,20 @@ public class DrawingPane {
                     result = JOptionPane.showConfirmDialog(
                             gui, "Erase the current painting?");
                 }
+
                 if (result == JOptionPane.OK_OPTION) {
                     clear(canvasImage, Color.WHITE);
                 }
             };
 
             JButton clearButton = new JButton("Clear");
-            tb.add(clearButton);
+            toolBar.add(clearButton);
             clearButton.addActionListener(clearListener);
 
-            gui.add(tb, BorderLayout.PAGE_START);
-
-            activeTool = DRAW_TOOL;
+            gui.add(toolBar, BorderLayout.PAGE_START);
 
             gui.add(output, BorderLayout.PAGE_END);
-            clear(colorSample, color);
+            clear(colorSample, currentColor);
             clear(canvasImage, Color.WHITE);
 
             // TODO: Initialize to drawing for debugging purposes only. Server will determine current state
@@ -143,10 +139,10 @@ public class DrawingPane {
         return gui;
     }
 
-    public void clear(BufferedImage bufferedImage, Color c) {
+    public void clear(BufferedImage bufferedImage, Color color) {
         Graphics2D graphics = bufferedImage.createGraphics();
         graphics.setRenderingHints(renderingHints);
-        graphics.setColor(c);
+        graphics.setColor(color);
         graphics.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
 
         graphics.dispose();
@@ -154,14 +150,14 @@ public class DrawingPane {
     }
 
     public void setImage(BufferedImage image) {
-        int w = image.getWidth();
-        int h = image.getHeight();
-        canvasImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        int width = image.getWidth();
+        int height = image.getHeight();
+        canvasImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
-        Graphics2D g = this.canvasImage.createGraphics();
-        g.setRenderingHints(renderingHints);
-        g.drawImage(image, 0, 0, gui);
-        g.dispose();
+        Graphics2D graphics = this.canvasImage.createGraphics();
+        graphics.setRenderingHints(renderingHints);
+        graphics.drawImage(image, 0, 0, gui);
+        graphics.dispose();
 
         if (this.imageLabel != null) {
             imageLabel.setIcon(new ImageIcon(canvasImage));
@@ -175,27 +171,27 @@ public class DrawingPane {
 
     /** Set the current painting color and refresh any elements needed. */
     public void setColor(Color color) {
-        this.color = color;
+        this.currentColor = color;
         clear(colorSample, color);
     }
 
     public void draw(Point point) {
-        Graphics2D g = this.canvasImage.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setRenderingHints(renderingHints);
-        g.setColor(this.color);
-        g.setStroke(stroke);
+        Graphics2D graphics = this.canvasImage.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.setRenderingHints(renderingHints);
+        graphics.setColor(this.currentColor);
+        graphics.setStroke(stroke);
         if (lastPoint1 != null && lastPoint2 != null) {
             GeneralPath path = new GeneralPath();
             path.moveTo(lastPoint2.x, lastPoint2.y);
             path.curveTo(lastPoint2.x, lastPoint2.y, lastPoint1.x, lastPoint1.y, point.x, point.y);
             // TODO: Send GeneralPath to server as well using ObjectOutputStream
-            g.draw(path);
+            graphics.draw(path);
         } else {
-            g.drawLine(point.x, point.y, point.x, point.y);
+            graphics.drawLine(point.x, point.y, point.x, point.y);
         }
 
-        g.dispose();
+        graphics.dispose();
         this.imageLabel.repaint();
         dirty = true;
         lastPoint1 = point;
@@ -206,16 +202,8 @@ public class DrawingPane {
 
         @Override
         public void mousePressed(MouseEvent event) {
-            if (activeTool == DrawingPane.DRAW_TOOL) {
-                if (STATE == State.DRAWING)
-                    draw(event.getPoint());
-            } else {
-                JOptionPane.showMessageDialog(
-                        gui,
-                        "Application error.  :(",
-                        "Error!",
-                        JOptionPane.ERROR_MESSAGE);
-            }
+            if (STATE == State.DRAWING)
+                draw(event.getPoint());
         }
 
         @Override
