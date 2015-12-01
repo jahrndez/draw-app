@@ -1,11 +1,14 @@
 package server;
 
 import interfaces.CreateJoinRequest;
+import interfaces.CreateJoinResponse;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -34,10 +37,12 @@ public class Dispatch {
     public static class HandleClient implements Runnable {
         private Socket socket;
         private ObjectInputStream objectInputStream;
+        private ObjectOutputStream objectOutputStream;
 
         public HandleClient(Socket socket) throws IOException {
             this.socket = socket;
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+            this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         }
 
         @Override
@@ -51,16 +56,23 @@ public class Dispatch {
                     session = SessionPool.instance().findSessionById(createJoinRequest.getSessionId());
                 }
 
-                // Add player info. If request was for new game, make player host (4th param)
-                session.addPlayer(socket,
-                        createJoinRequest.getRequestingClientUserName(),
-                        createJoinRequest.isNewGame());
+                if (session != null && session.addPlayer(socket,
+                                            createJoinRequest.getRequestingClientUserName(),
+                                            createJoinRequest.isNewGame())) {
+                    // success
+                    Set<String> existingPlayers = session.currentPlayerUsernames();
+                    objectOutputStream.writeObject(new CreateJoinResponse(existingPlayers, session.getSessionId()));
+                } else {
+                    // failed
+                    objectOutputStream.writeObject(new CreateJoinResponse());
+                    shutDownResources();
+                    return;
+                }
 
                 // Only call start on session creation
                 if (createJoinRequest.isNewGame()) {
                     session.start();
                 }
-
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
                 shutDownResources();

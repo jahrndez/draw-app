@@ -3,10 +3,13 @@ package server;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 /**
  * Represents a game session
@@ -32,6 +35,10 @@ public class Session {
 
     public int getSessionId() {
         return this.sessionId;
+    }
+
+    public synchronized Set<String> currentPlayerUsernames() {
+        return points.keySet().stream().map(Player::getUsername).collect(Collectors.toSet());
     }
 
     /**
@@ -75,11 +82,15 @@ public class Session {
      * Called once per session. Contains logic for game, including turn-taking and direct communication with clients
      */
     public void start() throws IOException {
-        // TODO: implement
-        while (points.keySet().size() < 3) {
-            // TODO: while there are less than 3 players
+        while (numPlayers() < 3) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
+        // TODO: finish implementationn
         // Once there are >= 3 players, hostPlayer will send a GameStart object
     }
 }
