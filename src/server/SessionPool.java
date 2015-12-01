@@ -27,7 +27,7 @@ public class SessionPool {
     }
 
     /**
-     * @return Session pool associated with id if one exists, null otherwise
+     * @return Session associated with id if one exists, null otherwise
      */
     public synchronized Session findSessionById(int id) {
         return sessions.get(id);

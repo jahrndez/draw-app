@@ -44,6 +44,24 @@ public class Dispatch {
         public void run() {
             try {
                 CreateJoinRequest createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
+                Session session;
+                if (createJoinRequest.isNewGame()) {
+                    session = SessionPool.instance().createNewSession();
+                } else {
+                    session = SessionPool.instance().findSessionById(createJoinRequest.getSessionId());
+                }
+
+                // Add player info. If request was for new game, make player host (4th param)
+                session.addPlayer(socket.getInetAddress(),
+                        socket,
+                        createJoinRequest.getRequestingClientUserName(),
+                        createJoinRequest.isNewGame());
+
+                // Only call start on session creation
+                if (createJoinRequest.isNewGame()) {
+                    session.start();
+                }
+
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
                 shutDownResources();
