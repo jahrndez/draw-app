@@ -30,6 +30,7 @@ public class Session {
     /**
      * Add a new player to this game session
      * @param ipAddress IP address of new player
+     * @param socket Socket being used to communicate with this player
      * @param userName Username of new player
      * @param isHostPlayer Whether the player being added is the host. This can only be true once for each session
      * @return True if successful, i.e. the game is taking new players and the player isn't already in this game
@@ -63,5 +64,7 @@ public class Session {
         while (points.keySet().size() < 3) {
             // TODO: while there are less than 3 players
         }
+
+        // Once there are >= 3 players, hostPlayer will send a GameStart object
     }
 }
