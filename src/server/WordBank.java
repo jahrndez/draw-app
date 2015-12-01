@@ -24,7 +24,7 @@ public class WordBank {
     /**
      * @return Singleton instance of WordBank
      */
-    public static WordBank instance() {
+    public static WordBank getWordBank() {
         if (_INSTANCE == null) {
             _INSTANCE = new WordBank();
             _INSTANCE.initialize();

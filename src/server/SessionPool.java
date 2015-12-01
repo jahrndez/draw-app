@@ -18,7 +18,7 @@ public class SessionPool {
         counter = new AtomicInteger(0);
     }
 
-    public static SessionPool instance() {
+    public static SessionPool getSessionPool() {
         if (_INSTANCE == null) {
             _INSTANCE = new SessionPool();
         }

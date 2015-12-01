@@ -1,9 +1,7 @@
 package server;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -53,7 +51,7 @@ public class Session {
             return false;
         }
 
-        Player newPlayer = new Player(socket.getInetAddress(), socket, userName);
+        Player newPlayer = new Player(socket, userName);
         if (points.containsKey(newPlayer)) {
             return false;
         }

@@ -51,9 +51,9 @@ public class Dispatch {
                 CreateJoinRequest createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
                 Session session;
                 if (createJoinRequest.isNewGame()) {
-                    session = SessionPool.instance().createNewSession();
+                    session = SessionPool.getSessionPool().createNewSession();
                 } else {
-                    session = SessionPool.instance().findSessionById(createJoinRequest.getSessionId());
+                    session = SessionPool.getSessionPool().findSessionById(createJoinRequest.getSessionId());
                 }
 
                 if (session != null && session.addPlayer(socket,

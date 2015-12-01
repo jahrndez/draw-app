@@ -1,5 +1,8 @@
 package server;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -11,8 +14,8 @@ public class Player {
     private Socket socket;
     private String username;
 
-    public Player(InetAddress ipAddress, Socket socket, String username) {
-        this.ipAddress = ipAddress;
+    public Player(Socket socket, String username) {
+        this.ipAddress = socket.getInetAddress();
         this.socket = socket;
         this.username = username;
     }
@@ -27,6 +30,14 @@ public class Player {
 
     public String getUsername() {
         return this.username;
+    }
+
+    public InputStream getInputStream() throws IOException {
+        return socket.getInputStream();
+    }
+
+    public OutputStream getOutputStream() throws IOException {
+        return socket.getOutputStream();
     }
 
     public boolean equals(Object o) {
