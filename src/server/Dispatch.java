@@ -52,8 +52,7 @@ public class Dispatch {
                 }
 
                 // Add player info. If request was for new game, make player host (4th param)
-                session.addPlayer(socket.getInetAddress(),
-                        socket,
+                session.addPlayer(socket,
                         createJoinRequest.getRequestingClientUserName(),
                         createJoinRequest.isNewGame());
 
