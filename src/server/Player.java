@@ -21,15 +21,15 @@ public class Player {
     }
 
     public InetAddress getIpAddress() {
-        return this.ipAddress;
+        return ipAddress;
     }
 
     public Socket getSocket() {
-        return this.socket;
+        return socket;
     }
 
     public String getUsername() {
-        return this.username;
+        return username;
     }
 
     public InputStream getInputStream() throws IOException {

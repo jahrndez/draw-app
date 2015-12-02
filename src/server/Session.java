@@ -1,5 +1,6 @@
 package server;
 
+import interfaces.GameStart;
 import interfaces.LobbyMessage;
 import interfaces.NewUserAlert;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 /**
- * Represents a game session
+ * Represents a single game session (single lobby)
  */
 public class Session {
     private final int sessionId;
@@ -36,7 +37,7 @@ public class Session {
     }
 
     public int getSessionId() {
-        return this.sessionId;
+        return sessionId;
     }
 
     public synchronized Set<String> currentPlayerUsernames() {
@@ -68,16 +69,12 @@ public class Session {
         }
 
         LobbyMessage newUserAlert = new NewUserAlert(username);
-        // alert all existing players that a new player has joined
-        for (Player p : points.keySet()) {
-            try {
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
-                objectOutputStream.flush();
-                objectOutputStream.writeObject(newUserAlert);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
+        try {
+            // alert all existing players that a new player has joined
+            communicateToAllExclude(newUserAlert, newPlayer);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
 
         return true;
@@ -92,7 +89,8 @@ public class Session {
     }
 
     /**
-     * Called once per session. Contains logic for game, including turn-taking and direct communication with clients
+     * Called once per session, by the thread that created this game session.
+     * Contains logic for game, including turn-taking and direct communication with clients.
      */
     public void start() throws IOException {
         while (numPlayers() < 3) {
@@ -105,5 +103,37 @@ public class Session {
 
         // TODO: finish implementationn
         // Once there are >= 3 players, hostPlayer will send a GameStart object
+        LobbyMessage gameStart = new GameStart();
+        communicateToAll(gameStart);
+        state = SessionState.INPROGRESS;
+    }
+
+    /**
+     * Sends the specified LobbyMessage to all current players
+     * @param message LobbyMessage to be sent
+     * @throws IOException if ObjectOutputStream creation fails
+     */
+    public void communicateToAll(LobbyMessage message) throws IOException {
+        for (Player p : points.keySet()) {
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
+            objectOutputStream.flush();
+            objectOutputStream.writeObject(message);
+        }
+    }
+
+    /**
+     * Sends the specified LobbyMessage to all current players except the player specified
+     * @param message LobbyMessage to be sent
+     * @param excludedPlayer Current Player who will not receive the LobbyMessage
+     * @throws IOException if ObjectOutputStream creation fails
+     */
+    public void communicateToAllExclude(LobbyMessage message, Player excludedPlayer) throws IOException {
+        for (Player p : points.keySet()) {
+            if (!p.equals(excludedPlayer)) {
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
+                objectOutputStream.flush();
+                objectOutputStream.writeObject(message);
+            }
+        }
     }
 }
