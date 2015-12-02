@@ -1,6 +1,10 @@
 package server;
 
+import interfaces.LobbyMessage;
+import interfaces.NewUserAlert;
+
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Queue;
@@ -42,16 +46,16 @@ public class Session {
     /**
      * Add a new player to this game session
      * @param socket Socket being used to communicate with this player
-     * @param userName Username of new player
+     * @param username Username of new player
      * @param isHostPlayer Whether the player being added is the host. This can only be true once for each session
      * @return True if successful, i.e. the game is taking new players and the player isn't already in this game
      */
-    public synchronized boolean addPlayer(Socket socket, String userName, boolean isHostPlayer) {
+    public synchronized boolean addPlayer(Socket socket, String username, boolean isHostPlayer) {
         if (state != SessionState.PREGAME) {
             return false;
         }
 
-        Player newPlayer = new Player(socket, userName);
+        Player newPlayer = new Player(socket, username);
         if (points.containsKey(newPlayer)) {
             return false;
         }
@@ -63,8 +67,19 @@ public class Session {
             hostPlayer = newPlayer;
         }
 
-        // TODO: Finish implementation
-        // TODO: Remember to broadcast to other clients when new player joins
+        LobbyMessage newUserAlert = new NewUserAlert(username);
+        // alert all existing players that a new player has joined
+        for (Player p : points.keySet()) {
+            try {
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
+                objectOutputStream.flush();
+                objectOutputStream.writeObject(newUserAlert);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
         return true;
     }
 
