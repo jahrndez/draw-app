@@ -49,6 +49,7 @@ public class Dispatch {
         public void run() {
             try {
                 CreateJoinRequest createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
+
                 Session session;
                 if (createJoinRequest.isNewGame()) {
                     session = SessionPool.getSessionPool().createNewSession();
@@ -70,9 +71,9 @@ public class Dispatch {
                 }
 
                 // Only call start on session creation
-                if (createJoinRequest.isNewGame()) {
+                if (createJoinRequest.isNewGame())
                     session.start();
-                }
+
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
                 shutDownResources();

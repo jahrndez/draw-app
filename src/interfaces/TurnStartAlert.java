@@ -3,10 +3,10 @@ package interfaces;
 /**
  * Message from server that a new turn is starting
  */
-public class TurnStart extends LobbyMessage {
+public class TurnStartAlert extends LobbyMessage {
     private String drawerUsername;
 
-    public TurnStart(String drawerUsername) {
+    public TurnStartAlert(String drawerUsername) {
         this.type = MessageType.TURN_START;
         this.drawerUsername = drawerUsername;
     }

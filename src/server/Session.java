@@ -1,23 +1,23 @@
 package server;
 
-import interfaces.GameStart;
-import interfaces.LobbyMessage;
-import interfaces.NewUserAlert;
+import interfaces.*;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
  * Represents a single game session (single lobby)
  */
 public class Session {
+    public static final long TURN_LENGTH = 1000 * 60; // millis
+    public static final int POINTS_FOR_WIN = 15;
+
     private final int sessionId;
     private SessionState state;
     private Map<Player, Integer> points;
@@ -26,14 +26,13 @@ public class Session {
 
     public enum SessionState {
         PREGAME,
-        INPROGRESS
+        IN_PROGRESS
     }
 
     public Session (int sessionId) {
         this.sessionId = sessionId;
         this.state = SessionState.PREGAME;
         this.points = new ConcurrentHashMap<>();
-        this.order = new ConcurrentLinkedQueue<>();
     }
 
     public int getSessionId() {
@@ -101,19 +100,64 @@ public class Session {
             }
         }
 
-        // TODO: finish implementationn
-        // Once there are >= 3 players, hostPlayer will send a GameStart object
-        LobbyMessage gameStart = new GameStart();
+        // TODO: finish implementation. Currently starts the moment the 3rd player joins, without waiting for host player confirmation
+
+        // Once there are >= 3 players, hostPlayer will send a GameStartAlert object
+        LobbyMessage gameStart = new GameStartAlert();
         communicateToAll(gameStart);
-        state = SessionState.INPROGRESS;
+        state = SessionState.IN_PROGRESS;
+
+        initializeTurnOrder();
+
+        boolean winnerExists = false; // true when some player hits POINTS_FOR_WIN
+
+        while (!winnerExists) {
+            Player currentDrawer = order.remove();
+            order.add(currentDrawer);
+
+            LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername());
+            communicateToAll(turnStart);
+
+            AtomicBoolean isTurnOver = new AtomicBoolean(false);
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    isTurnOver.set(true);
+                }
+            }, TURN_LENGTH);
+
+            // TODO: handle guesses and point accumulation, including setting winnerExists to true when appropriate
+            while (!isTurnOver.get()) {
+                ObjectInputStream drawerInput = new ObjectInputStream(currentDrawer.getInputStream());
+                try {
+                    LobbyMessage drawInfo = (LobbyMessage) drawerInput.readObject();
+                    if (!(drawInfo instanceof DrawInfo)) {
+                        System.out.println("Unexpected LobbyMessage from drawing client. Expected DrawInfo but received "
+                                + drawInfo.getClass().getSimpleName());
+                        continue;
+                    }
+
+                    communicateToAllExclude(drawInfo, currentDrawer);
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // Map<Player, Integer>  ->  Map<String, Integer>
+            Map<String, Integer> currentPoints =
+                    points.
+                    entrySet().
+                    stream().
+                    collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
+
+            LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
+            communicateToAll(turnEnd);
+        }
     }
 
-    /**
-     * Sends the specified LobbyMessage to all current players
-     * @param message LobbyMessage to be sent
-     * @throws IOException if ObjectOutputStream creation fails
-     */
-    public void communicateToAll(LobbyMessage message) throws IOException {
+    // Sends the specified LobbyMessage to all current players
+    private void communicateToAll(LobbyMessage message) throws IOException {
         for (Player p : points.keySet()) {
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
             objectOutputStream.flush();
@@ -121,13 +165,8 @@ public class Session {
         }
     }
 
-    /**
-     * Sends the specified LobbyMessage to all current players except the player specified
-     * @param message LobbyMessage to be sent
-     * @param excludedPlayer Current Player who will not receive the LobbyMessage
-     * @throws IOException if ObjectOutputStream creation fails
-     */
-    public void communicateToAllExclude(LobbyMessage message, Player excludedPlayer) throws IOException {
+    // Sends the specified LobbyMessage to all current players except the player specified
+    private void communicateToAllExclude(LobbyMessage message, Player excludedPlayer) throws IOException {
         for (Player p : points.keySet()) {
             if (!p.equals(excludedPlayer)) {
                 ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
@@ -135,5 +174,13 @@ public class Session {
                 objectOutputStream.writeObject(message);
             }
         }
+    }
+
+    // Initializes player turn order to random order
+    private void initializeTurnOrder() {
+        LinkedList<Player> players = new LinkedList<>();
+        players.addAll(points.keySet());
+        Collections.shuffle(players);
+        order = players;
     }
 }
