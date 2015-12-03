@@ -41,8 +41,9 @@ public class Dispatch {
 
         public HandleClient(Socket socket) throws IOException {
             this.socket = socket;
-            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            this.objectOutputStream.flush();
+            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
         }
 
         @Override
