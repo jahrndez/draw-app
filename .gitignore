@@ -2,3 +2,4 @@ out/
 .idea/
 cse461-project3.iml
 .idea/uiDesigner.xml
+bin/
