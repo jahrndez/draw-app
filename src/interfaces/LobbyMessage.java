@@ -1,10 +1,12 @@
 package interfaces;
 
+import java.io.Serializable;
+
 /**
  * Generic message from the lobby. Serves as the common interface object sent from server, and is demultiplexed into
  * appropriate message type by the client.
  */
-public abstract class LobbyMessage {
+public abstract class LobbyMessage implements Serializable {
     protected MessageType type;
 
     public enum MessageType {

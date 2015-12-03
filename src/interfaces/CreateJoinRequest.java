@@ -1,9 +1,11 @@
 package interfaces;
 
+import java.io.Serializable;
+
 /**
  * Represents a request for a new game session on the server or a request to join an existing game
  */
-public class CreateJoinRequest {
+public class CreateJoinRequest implements Serializable {
     private String userName;
     private boolean newGame;
     private int sessionId;
