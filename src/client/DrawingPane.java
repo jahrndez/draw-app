@@ -15,7 +15,7 @@ import javax.swing.event.ChangeListener;
 /**
  * Serves as the pane on which 2D graphics will be displayed.
  */
-public class DrawingPane {
+public class DrawingPane implements GameScreen{
 
     /** Image used to make changes. */
     private BufferedImage canvasImage;

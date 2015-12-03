@@ -17,89 +17,61 @@ import interfaces.CreateJoinResponse;
 /**
  *
  */
-public class DrawApp {
-
+public class DrawApp implements Runnable {
+	JFrame gameWindow;
+	DrawingPane drawApp;
+	MainMenu mainMenu;
+	Lobby lobby;
+	
     public static void main(String[] args) {
-        Runnable r = () -> {
-            try {
-                UIManager.setLookAndFeel(
-                        UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                // use default
-            }
-            JFrame f = new JFrame("DrawApp");
-
-            DrawingPane drawApp = new DrawingPane();
-            ActionListener create = event -> {
-            	try {
-	                InetAddress address = InetAddress.getByName("localhost");
-	                Socket socket = new Socket(address, 54777);
-	                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-	                oos.flush();
-	                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-	
-	                String myUsername = "Alex";
-	                CreateJoinRequest request = new CreateJoinRequest(myUsername);
-	
-	                oos.writeObject(request);
-	
-	                CreateJoinResponse createJoinResponse = (CreateJoinResponse) ois.readObject();
-	
-	                if (createJoinResponse.wasSuccessful()) {
-	                    System.out.println("Successfully in a game! Game id: " + createJoinResponse.getSessionId());
-	                	f.setContentPane(drawApp.getGui());
-	                	f.revalidate();
-	                	f.repaint();
-	                } else {
-	                    System.err.println("Failed");
-	                    return;
-	                }
-            	} catch (IOException | ClassNotFoundException e) {
-            		e.printStackTrace();
-            	}
-            };
-            ActionListener join = event -> {
-            	try {
-	                InetAddress address = InetAddress.getByName("128.208.1.139");
-	                Socket socket = new Socket(address, 54777);
-	                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-	                oos.flush();
-	                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-	
-	                String myUsername = "Alex";
-	                CreateJoinRequest request = new CreateJoinRequest(myUsername, 0);
-	
-	                oos.writeObject(request);
-	
-	                CreateJoinResponse createJoinResponse = (CreateJoinResponse) ois.readObject();
-	
-	                if (createJoinResponse.wasSuccessful()) {
-	                    System.out.println("Successfully in a game! Game id: " + createJoinResponse.getSessionId());
-	                	f.setContentPane(drawApp.getGui());
-	                	f.revalidate();
-	                	f.repaint();
-	                } else {
-	                    System.err.println("Failed");
-	                    return;
-	                }
-            	} catch (IOException | ClassNotFoundException e) {
-            		e.printStackTrace();
-            	}
-            };
-            MainMenu mainMenu = new MainMenu(create, join);
-            
-            f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            f.setLocationByPlatform(true);
-
-            f.setContentPane(drawApp.getGui());
-            f.pack();
-            f.setMinimumSize(f.getSize());
-            
-            f.setContentPane(mainMenu.getGui());
-
-            f.setVisible(true);
-        };
+        Runnable r = new DrawApp();
 
         SwingUtilities.invokeLater(r);
+    }
+    
+    public void run() {
+        try {
+            UIManager.setLookAndFeel(
+                    UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            // use default
+        }
+        gameWindow = new JFrame("DrawApp");
+        lobby = new Lobby();
+        drawApp = new DrawingPane();
+        mainMenu = new MainMenu(this);
+        
+        gameWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        gameWindow.setLocationByPlatform(true);
+
+        gameWindow.setContentPane(drawApp.getGui());
+        gameWindow.pack();
+        gameWindow.setMinimumSize(gameWindow.getSize());
+        
+        gameWindow.setContentPane(mainMenu.getGui());
+
+        gameWindow.setVisible(true);
+    }
+    
+    public void goToGame() {
+    	gameWindow.setContentPane(drawApp.getGui());
+    	gameWindow.revalidate();
+    	gameWindow.repaint();
+    }
+    
+    public void goToLobby(CreateJoinResponse createJoinResponse) {
+    	for (String s : createJoinResponse.getExistingPlayers())
+    		System.out.println(s);
+    	gameWindow.setContentPane(lobby.getGui());
+    	gameWindow.revalidate();
+    	gameWindow.repaint();
+    }
+    
+    public String getServerIP() {
+    	return mainMenu.getServerIP();
+    }
+    
+    public String getUsername() {
+    	return mainMenu.getUsername();
     }
 }

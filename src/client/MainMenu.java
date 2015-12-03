@@ -6,34 +6,61 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 
-public class MainMenu {
+public class MainMenu implements GameScreen {
     /** The main GUI that might be added to a frame or applet. */
     private JPanel gui;
-    private ActionListener create, join;
+    private ActionListener buttonAction;
+    private JTextArea nameField, serverField;
     
-    public MainMenu(ActionListener onCreateGame, ActionListener onJoinGame) {
-    	create = onCreateGame;
-    	join = onJoinGame;
+    public MainMenu(DrawApp game) {
+    	buttonAction = new CreateJoinAction(game);
     }
     
 	public JComponent getGui() {
         if (gui == null) {
             gui = new JPanel(new GridBagLayout());
         	GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridy = 0;
+
+            JLabel user = new JLabel("Username: ");
+            gui.add(user, gbc);
+            nameField = new JTextArea("Anonymous", 1, 23);
+            nameField.setMaximumSize(nameField.getPreferredSize());
+            gbc.gridx = 1;
+            gbc.gridwidth = 2;
+            gui.add(nameField, gbc);
             
-            JPanel buttons = new JPanel();
-        	
+            gbc.gridy = 1;
+            gbc.gridx = 0;
+            gbc.gridwidth = 1;
+            
+            JLabel server = new JLabel("Server IP: ");
+            gui.add(server, gbc);
+            
+            serverField = new JTextArea("localhost", 1, 23);
+            serverField.setMaximumSize(serverField.getPreferredSize());
+            gbc.gridx = 1;
+            gbc.gridwidth = 2;
+            gui.add(serverField, gbc);
+
+            gbc.gridy = 2;  
+            gbc.gridx = 0;  
+            gbc.gridwidth = 1;     
+            
             JButton newGame = new JButton();
             newGame.setText("Start New Game");
-            newGame.addActionListener(create);
-            buttons.add(newGame);
+            newGame.addActionListener(buttonAction);
+            gui.add(newGame, gbc);
 
             JButton joinGame = new JButton();
             joinGame.setText("Join Game");
-            joinGame.addActionListener(join);
-            buttons.add(joinGame);
+            joinGame.addActionListener(buttonAction);
+            gbc.gridx = 1;
+            gui.add(joinGame, gbc);
             
             JButton quit = new JButton();
             quit.setText("Quit Game");
@@ -41,11 +68,18 @@ public class MainMenu {
             	System.exit(0);
             };
             quit.addActionListener(quitGameListener);
-            buttons.add(quit);
-            
-            gui.add(buttons, gbc);
+            gbc.gridx = 2;
+            gui.add(quit, gbc);
         }
 
         return gui;
     }
+	
+	public String getUsername() {
+		return nameField.getText();
+	}
+	
+	public String getServerIP() {
+		return serverField.getText();
+	}
 }
