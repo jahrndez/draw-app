@@ -1,11 +1,12 @@
 package interfaces;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
  * Response from server after the client has requested to join/create a game session
  */
-public class CreateJoinResponse {
+public class CreateJoinResponse implements Serializable {
     private Set<String> existingPlayers;
     private int sessionId;
     private boolean successful;

@@ -115,8 +115,12 @@ public class Session {
             Player currentDrawer = order.remove();
             order.add(currentDrawer);
 
-            LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername());
-            communicateToAll(turnStart);
+            LobbyMessage turnStartGuessers = new TurnStartAlert(currentDrawer.getUsername());
+            communicateToAllExclude(turnStartGuessers, currentDrawer);
+
+            String word = WordBank.getWordBank().getNextWord(getSessionId());
+            LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
+            comunicateTo(turnStartDrawer, currentDrawer);
 
             AtomicBoolean isTurnOver = new AtomicBoolean(false);
             Timer timer = new Timer();
@@ -154,6 +158,12 @@ public class Session {
             LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
             communicateToAll(turnEnd);
         }
+    }
+
+    private void comunicateTo(LobbyMessage message, Player player) throws IOException {
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(player.getOutputStream());
+        objectOutputStream.flush();
+        objectOutputStream.writeObject(message);
     }
 
     // Sends the specified LobbyMessage to all current players
