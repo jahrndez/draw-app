@@ -120,7 +120,7 @@ public class Session {
 
             String word = WordBank.getWordBank().getNextWord(getSessionId());
             LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
-            comunicateTo(turnStartDrawer, currentDrawer);
+            communicateTo(turnStartDrawer, currentDrawer);
 
             AtomicBoolean isTurnOver = new AtomicBoolean(false);
             Timer timer = new Timer();
@@ -133,9 +133,8 @@ public class Session {
 
             // TODO: handle guesses and point accumulation, including setting winnerExists to true when appropriate
             while (!isTurnOver.get()) {
-                ObjectInputStream drawerInput = new ObjectInputStream(currentDrawer.getInputStream());
                 try {
-                    LobbyMessage drawInfo = (LobbyMessage) drawerInput.readObject();
+                    LobbyMessage drawInfo = readFrom(currentDrawer);
                     if (!(drawInfo instanceof DrawInfo)) {
                         System.out.println("Unexpected LobbyMessage from drawing client. Expected DrawInfo but received "
                                 + drawInfo.getClass().getSimpleName());
@@ -160,8 +159,13 @@ public class Session {
         }
     }
 
-    private void comunicateTo(LobbyMessage message, Player player) throws IOException {
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(player.getOutputStream());
+    private LobbyMessage readFrom(Player player) throws IOException, ClassNotFoundException {
+        ObjectInputStream inputStream = player.getObjectInputStream();
+        return (LobbyMessage) inputStream.readObject();
+    }
+
+    private void communicateTo(LobbyMessage message, Player player) throws IOException {
+        ObjectOutputStream objectOutputStream = player.getObjectOutputStream();
         objectOutputStream.flush();
         objectOutputStream.writeObject(message);
     }
@@ -169,7 +173,7 @@ public class Session {
     // Sends the specified LobbyMessage to all current players
     private void communicateToAll(LobbyMessage message) throws IOException {
         for (Player p : points.keySet()) {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
+            ObjectOutputStream objectOutputStream = p.getObjectOutputStream();
             objectOutputStream.flush();
             objectOutputStream.writeObject(message);
         }
@@ -179,7 +183,7 @@ public class Session {
     private void communicateToAllExclude(LobbyMessage message, Player excludedPlayer) throws IOException {
         for (Player p : points.keySet()) {
             if (!p.equals(excludedPlayer)) {
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(p.getOutputStream());
+                ObjectOutputStream objectOutputStream = p.getObjectOutputStream();
                 objectOutputStream.flush();
                 objectOutputStream.writeObject(message);
             }
