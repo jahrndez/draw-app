@@ -52,13 +52,13 @@ public class Player {
     public boolean equals(Object o) {
         if (o instanceof Player) {
             Player p = (Player) o;
-            return this.ipAddress.equals(p.ipAddress);
+            return this.ipAddress.equals(p.ipAddress) && this.socket.getPort() == p.getSocket().getPort();
         }
 
         return false;
     }
 
     public int hashCode() {
-        return ipAddress.hashCode();
+        return (ipAddress.toString() + socket.getPort()).hashCode();
     }
 }
