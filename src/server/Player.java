@@ -34,6 +34,10 @@ public class Player {
         return username;
     }
 
+    /**
+     * Write the specified message to this Player. Thread-safe so no 2 writes are made concurrently.
+     * @param message LobbyMessage to be sent
+     */
     public synchronized void writeToPlayer(LobbyMessage message) throws IOException {
         if (objectOutputStream == null) {
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -44,6 +48,10 @@ public class Player {
         objectOutputStream.writeObject(message);
     }
 
+    /**
+     * Read general object from this Player's object input stream.
+     * @return Object sent by the client
+     */
     public synchronized Object readFromPlayer() throws IOException, ClassNotFoundException {
         if (objectInputStream == null) {
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
