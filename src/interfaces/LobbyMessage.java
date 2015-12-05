@@ -13,6 +13,7 @@ public abstract class LobbyMessage implements Serializable {
         NEW_USER,   // alert that a new user has joined the game
         HOST_CONFIRM,
         GAME_START,  // we're about to start the game
+        GAME_END,
         TURN_START,  // new turn is starting
         TURN_END,
         CORRECT_ANSWER,
