@@ -11,9 +11,11 @@ public abstract class LobbyMessage implements Serializable {
 
     public enum MessageType {
         NEW_USER,   // alert that a new user has joined the game
+        HOST_CONFIRM,
         GAME_START,  // we're about to start the game
         TURN_START,  // new turn is starting
         TURN_END,
+        CORRECT_ANSWER,
         DRAW_INFO
     }
 

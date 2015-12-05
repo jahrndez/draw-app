@@ -8,6 +8,8 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -23,10 +25,12 @@ public class Session {
     private Map<Player, Integer> points;
     private Player hostPlayer;
     private Queue<Player> order;  // Player at front of queue is next. After turn, player added to end of queue
+    private Queue<Guess> guessQueue;
 
     public enum SessionState {
-        PREGAME,
-        IN_PROGRESS
+        PREGAME,    // before game starts
+        IN_PROGRESS,  // game in-progress but between turns
+        GUESSING    // a turn is in progress
     }
 
     public Session (int sessionId) {
@@ -100,14 +104,25 @@ public class Session {
             }
         }
 
-        // TODO: finish implementation. Currently starts the moment the 3rd player joins, without waiting for host player confirmation
+        LobbyMessage confirmation = new HostConfirm();
+        hostPlayer.writeToPlayer(confirmation);
 
-        // Once there are >= 3 players, hostPlayer will send a GameStartAlert object
-        LobbyMessage gameStart = new GameStartAlert();
-        communicateToAll(gameStart);
+        try {
+            Object gameStart = hostPlayer.readFromPlayer();
+            if (!(gameStart instanceof GameStart)) {
+                System.out.println("Expected GameStart from host player, instead received " + gameStart.getClass().getSimpleName());
+                return;
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        LobbyMessage gameStartAlert = new GameStartAlert();
+        communicateToAll(gameStartAlert);
         state = SessionState.IN_PROGRESS;
 
         initializeTurnOrder();
+        List<Player> winners = new ArrayList<>();
 
         boolean winnerExists = false; // true when some player hits POINTS_FOR_WIN
 
@@ -115,12 +130,9 @@ public class Session {
             Player currentDrawer = order.remove();
             order.add(currentDrawer);
 
-            LobbyMessage turnStartGuessers = new TurnStartAlert(currentDrawer.getUsername());
-            communicateToAllExclude(turnStartGuessers, currentDrawer);
+            state = SessionState.GUESSING;
 
             String word = WordBank.getWordBank().getNextWord(getSessionId());
-            LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
-            communicateTo(turnStartDrawer, currentDrawer);
 
             AtomicBoolean isTurnOver = new AtomicBoolean(false);
             Timer timer = new Timer();
@@ -128,13 +140,29 @@ public class Session {
                 @Override
                 public void run() {
                     isTurnOver.set(true);
+                    state = SessionState.IN_PROGRESS;
                 }
             }, TURN_LENGTH);
 
-            // TODO: handle guesses and point accumulation, including setting winnerExists to true when appropriate
+            // Empty out guess queue
+            guessQueue = new ConcurrentLinkedQueue<>();
+
+            // Handle guesses in parallel
+            for (Player player : points.keySet()) {
+                (new Thread(new GuessHandler(player, word))).start();
+            }
+
+            // Alert players of turn start
+            LobbyMessage turnStartGuessers = new TurnStartAlert(currentDrawer.getUsername());
+            communicateToAllExclude(turnStartGuessers, currentDrawer);
+
+            LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
+            currentDrawer.writeToPlayer(turnStartDrawer);
+
+            // Continually transmit drawing information from drawer to guessers
             while (!isTurnOver.get()) {
                 try {
-                    LobbyMessage drawInfo = readFrom(currentDrawer);
+                    LobbyMessage drawInfo = (LobbyMessage) currentDrawer.readFromPlayer();
                     if (!(drawInfo instanceof DrawInfo)) {
                         System.out.println("Unexpected LobbyMessage from drawing client. Expected DrawInfo but received "
                                 + drawInfo.getClass().getSimpleName());
@@ -147,6 +175,33 @@ public class Session {
                 }
             }
 
+            // Check queued guesses, and add points accordingly
+            int correctGuesses = 0;
+            boolean isFirst = true;
+            for (Guess guess : guessQueue) {
+                if (word.equals(guess.word())) {
+                    correctGuesses++;
+                    if (isFirst) {
+                        points.put(guess.player(), points.get(guess.player()) + 2);
+                        isFirst = false;
+                    } else {
+                        points.put(guess.player(), points.get(guess.player()) + 1);
+                    }
+                }
+            }
+
+            // Award points to drawer based on number of players that guessed correctly
+            int drawerPoints;
+            if (correctGuesses == 0) {
+                drawerPoints = 0;
+            } else if (correctGuesses == 1) {
+                drawerPoints = 2;
+            } else {  // > 1
+                drawerPoints = 1;
+            }
+
+            points.put(currentDrawer, points.get(currentDrawer) + drawerPoints);
+
             // Map<Player, Integer>  ->  Map<String, Integer>
             Map<String, Integer> currentPoints =
                     points.
@@ -154,28 +209,25 @@ public class Session {
                     stream().
                     collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
 
+            // Alert all players that the turn has ended and send current points of all players
             LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
             communicateToAll(turnEnd);
+
+            for (Map.Entry entry : points.entrySet()) {
+                if ((Integer) entry.getValue() >= POINTS_FOR_WIN) {
+                    winnerExists = true;
+                    winners.add((Player) entry.getKey());
+                }
+            }
         }
-    }
 
-    private LobbyMessage readFrom(Player player) throws IOException, ClassNotFoundException {
-        ObjectInputStream inputStream = player.getObjectInputStream();
-        return (LobbyMessage) inputStream.readObject();
-    }
-
-    private void communicateTo(LobbyMessage message, Player player) throws IOException {
-        ObjectOutputStream objectOutputStream = player.getObjectOutputStream();
-        objectOutputStream.flush();
-        objectOutputStream.writeObject(message);
+        // TODO: Alert players the game has ended, finish logic; do something with 'winners' list
     }
 
     // Sends the specified LobbyMessage to all current players
     private void communicateToAll(LobbyMessage message) throws IOException {
         for (Player p : points.keySet()) {
-            ObjectOutputStream objectOutputStream = p.getObjectOutputStream();
-            objectOutputStream.flush();
-            objectOutputStream.writeObject(message);
+            p.writeToPlayer(message);
         }
     }
 
@@ -183,9 +235,7 @@ public class Session {
     private void communicateToAllExclude(LobbyMessage message, Player excludedPlayer) throws IOException {
         for (Player p : points.keySet()) {
             if (!p.equals(excludedPlayer)) {
-                ObjectOutputStream objectOutputStream = p.getObjectOutputStream();
-                objectOutputStream.flush();
-                objectOutputStream.writeObject(message);
+                p.writeToPlayer(message);
             }
         }
     }
@@ -196,5 +246,31 @@ public class Session {
         players.addAll(points.keySet());
         Collections.shuffle(players);
         order = players;
+    }
+
+    public class GuessHandler implements Runnable {
+        private Player player;
+        private String correctWord;
+
+        public GuessHandler(Player player, String correctWord) {
+            this.player = player;
+            this.correctWord = correctWord;
+        }
+
+        public void run() {
+            try {
+                boolean done = false;
+                while (state == SessionState.GUESSING && !done) {
+                    String guess = (String) player.readFromPlayer();
+                    guessQueue.add(new Guess(player, guess));
+                    if (correctWord.equals(guess)) {
+                        done = true;
+                        player.writeToPlayer(new CorrectAnswerAlert());
+                    }
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -1,5 +1,7 @@
 package server;
 
+import interfaces.LobbyMessage;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -32,21 +34,22 @@ public class Player {
         return username;
     }
 
-    public ObjectInputStream getObjectInputStream() throws IOException {
-        if (objectOutputStream == null) {
-            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
-        }
-
-        return objectInputStream;
-    }
-
-    public ObjectOutputStream getObjectOutputStream() throws IOException {
+    public synchronized void writeToPlayer(LobbyMessage message) throws IOException {
         if (objectOutputStream == null) {
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             this.objectOutputStream.flush();
         }
 
-        return objectOutputStream;
+        objectOutputStream.flush();
+        objectOutputStream.writeObject(message);
+    }
+
+    public synchronized Object readFromPlayer() throws IOException, ClassNotFoundException {
+        if (objectInputStream == null) {
+            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+        }
+
+        return objectInputStream.readObject();
     }
 
     public boolean equals(Object o) {
