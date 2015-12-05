@@ -96,28 +96,55 @@ public class Session {
      * Contains logic for game, including turn-taking and direct communication with clients.
      */
     public void start() throws IOException {
-        while (numPlayers() < 3) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+    	try {
+//    		while (!hostPlayer.canReadFromPlayer()) {
+//    			Thread.sleep(500);
+//    		}
+//			Runnable getStartCommand = () -> {
+//				try {
+					Object gameStart = hostPlayer.readFromPlayer();
+//				} catch (ClassNotFoundException | IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			};
+//			new Thread(getStartCommand).start();
+//			while(gameStart == null) {
+//				
+//				Thread.sleep(500);
+//			}
+			if (!(gameStart instanceof GameStart)) {
+              System.out.println("Expected GameStart from host player, instead received " + gameStart.getClass().getSimpleName());
+              return;
+          }
+		} catch (ClassNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+//        while (numPlayers() < 3) {
+//            try {
+//                Thread.sleep(500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        LobbyMessage confirmation = new HostConfirm();
+//        hostPlayer.writeToPlayer(confirmation);
+//
+//        try {
+//            Object gameStart = hostPlayer.readFromPlayer();
+//            if (!(gameStart instanceof GameStart)) {
+//                System.out.println("Expected GameStart from host player, instead received " + gameStart.getClass().getSimpleName());
+//                return;
+//            }
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
 
-        LobbyMessage confirmation = new HostConfirm();
-        hostPlayer.writeToPlayer(confirmation);
-
-        try {
-            Object gameStart = hostPlayer.readFromPlayer();
-            if (!(gameStart instanceof GameStart)) {
-                System.out.println("Expected GameStart from host player, instead received " + gameStart.getClass().getSimpleName());
-                return;
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
+        
         LobbyMessage gameStartAlert = new GameStartAlert();
+        System.out.println("Start Game");
         communicateToAll(gameStartAlert);
         state = SessionState.IN_PROGRESS;
 

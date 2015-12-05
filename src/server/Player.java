@@ -44,7 +44,7 @@ public class Player {
         objectOutputStream.writeObject(message);
     }
 
-    public synchronized Object readFromPlayer() throws IOException, ClassNotFoundException {
+    public Object readFromPlayer() throws IOException, ClassNotFoundException {
         if (objectInputStream == null) {
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
         }

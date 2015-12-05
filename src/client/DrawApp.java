@@ -10,6 +10,7 @@ import java.net.Socket;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import interfaces.CreateJoinRequest;
 import interfaces.CreateJoinResponse;
@@ -41,7 +42,7 @@ public class DrawApp implements Runnable {
         drawApp = new DrawingPane();
         mainMenu = new MainMenu(this);
         
-        gameWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        gameWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         gameWindow.setLocationByPlatform(true);
 
         gameWindow.setContentPane(drawApp.getGui());
@@ -59,9 +60,9 @@ public class DrawApp implements Runnable {
     	gameWindow.repaint();
     }
     
-    public void goToLobby(CreateJoinResponse createJoinResponse) {
-    	for (String s : createJoinResponse.getExistingPlayers())
-    		System.out.println(s);
+    public void goToLobby(Socket socket, CreateJoinResponse createJoinResponse) {
+    	lobby.enterLobby(socket, this, createJoinResponse);
+    	new Thread(lobby).start();;
     	gameWindow.setContentPane(lobby.getGui());
     	gameWindow.revalidate();
     	gameWindow.repaint();

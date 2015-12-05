@@ -58,8 +58,10 @@ public class Dispatch {
                     session = SessionPool.getSessionPool().findSessionById(createJoinRequest.getSessionId());
                 }
 
+                String username = createJoinRequest.getRequestingClientUserName() 
+                		+ " (" + socket.getInetAddress() + ":" + socket.getPort() + ")";
                 if (session != null && session.addPlayer(socket,
-                                            createJoinRequest.getRequestingClientUserName(),
+                                            username,
                                             createJoinRequest.isNewGame())) {
                     // success
                     Set<String> existingPlayers = session.currentPlayerUsernames();

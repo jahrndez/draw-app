@@ -48,7 +48,7 @@ public class CreateJoinAction implements ActionListener {
 
             if (createJoinResponse.wasSuccessful()) {
                 System.out.println("Successfully in a game! Game id: " + createJoinResponse.getSessionId());
-                game.goToLobby(createJoinResponse);
+                game.goToLobby(socket, createJoinResponse);
             } else {
                 System.err.println("Failed");
                 return;
