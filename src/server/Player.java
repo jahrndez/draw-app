@@ -52,7 +52,7 @@ public class Player {
      * Read general object from this Player's object input stream.
      * @return Object sent by the client
      */
-    public synchronized Object readFromPlayer() throws IOException, ClassNotFoundException {
+    public Object readFromPlayer() throws IOException, ClassNotFoundException {
         if (objectInputStream == null) {
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
         }
