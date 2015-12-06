@@ -1,6 +1,8 @@
 package server;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,5 +54,11 @@ public class SessionPool {
      */
     public synchronized void removeSession(int id) {
         sessions.remove(id);
+    }
+
+    public synchronized Set<Session> getAllSessions() {
+        Set<Session> result = new HashSet<>();
+        result.addAll(sessions.values());
+        return result;
     }
 }

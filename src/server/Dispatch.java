@@ -2,15 +2,18 @@ package server;
 
 import interfaces.CreateJoinRequest;
 import interfaces.CreateJoinResponse;
+import interfaces.PingResponse;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Will handle new connections and dispatch into individual sessions (games)
@@ -52,10 +55,24 @@ public class Dispatch {
                 CreateJoinRequest createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
 
                 Session session;
-                if (createJoinRequest.isNewGame()) {
-                    session = SessionPool.getSessionPool().createNewSession();
-                } else {
-                    session = SessionPool.getSessionPool().findSessionById(createJoinRequest.getSessionId());
+                switch (createJoinRequest.type()) {
+                    case CREATE:
+                        session = SessionPool.getSessionPool().createNewSession();
+                        break;
+                    case JOIN:
+                        session = SessionPool.getSessionPool().findSessionById(createJoinRequest.getSessionId());
+                        break;
+                    case PING:
+                        Map<Integer, Integer> idsToCounts =
+                                SessionPool.getSessionPool().
+                                        getAllSessions().
+                                        stream().
+                                        collect(Collectors.toMap(Session::getSessionId, Session::numPlayers));
+
+                        objectOutputStream.writeObject(new PingResponse(idsToCounts));
+                        return;
+                    default:
+                        session = null;
                 }
 
                 String username = createJoinRequest.getRequestingClientUserName() 
@@ -85,6 +102,7 @@ public class Dispatch {
 
         private void shutDownResources() {
             try {
+                this.objectOutputStream.close();
                 this.objectInputStream.close();
                 this.socket.close();
             } catch (IOException e) {
