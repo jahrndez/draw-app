@@ -57,7 +57,7 @@ public class Lobby implements GameScreen, Runnable {
 	    			currentPlayers.add(userAdd.getUserName());
 	    			updatePlayerList();
     			} else if (message instanceof GameStartAlert) {
-    				game.goToGame();
+    				game.goToGame(in, out);
     				break;
     			}
     			

@@ -1,16 +1,43 @@
 package client;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.RenderingHints.Key;
-import java.awt.event.*;
+import java.awt.Stroke;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.*;
-import javax.swing.border.*;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JToolBar;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
+
+import interfaces.TurnStartAlert;
 
 /**
  * Serves as the pane on which 2D graphics will be displayed.
@@ -38,7 +65,11 @@ public class DrawingPane implements GameScreen{
 
     private Point lastPoint1;
     private Point lastPoint2;
-
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
+    private TurnStartAlert currentTurn;
+    private JTextArea guess;
+    
     private static State STATE;
 
     enum State {
@@ -47,6 +78,25 @@ public class DrawingPane implements GameScreen{
         NO_GAME     // Game hasn't started yet or in between games
     }
 
+    public void registerStreams(ObjectInputStream input, ObjectOutputStream output) {
+    	in = input;
+    	out = output;
+    	
+    	try {
+    		currentTurn = (TurnStartAlert) in.readObject();
+		} catch (ClassNotFoundException | IOException e) {
+			e.printStackTrace();
+		}
+
+        // TODO: Initialize to drawing for debugging purposes only. Server will determine current state
+        STATE = State.GUESSING;
+        if (currentTurn.isDrawer()) {
+        	STATE = State.DRAWING;
+        	guess.setText(currentTurn.getWord());
+        	guess.setEditable(false);
+        }
+    }
+    
     public JComponent getGui() {
         if (gui == null) {
             Map<Key, Object> hintsMap = new HashMap<>();
@@ -131,9 +181,9 @@ public class DrawingPane implements GameScreen{
             gui.add(output, BorderLayout.PAGE_END);
             clear(colorSample, currentColor);
             clear(canvasImage, Color.WHITE);
-
-            // TODO: Initialize to drawing for debugging purposes only. Server will determine current state
-            STATE = State.DRAWING;
+            
+            guess = new JTextArea();
+            gui.add(guess, BorderLayout.PAGE_END);
         }
 
         return gui;
@@ -186,6 +236,7 @@ public class DrawingPane implements GameScreen{
             path.moveTo(lastPoint2.x, lastPoint2.y);
             path.curveTo(lastPoint2.x, lastPoint2.y, lastPoint1.x, lastPoint1.y, point.x, point.y);
             // TODO: Send GeneralPath to server as well using ObjectOutputStream
+            System.out.println("GeneralPath");
             graphics.draw(path);
         } else {
             graphics.drawLine(point.x, point.y, point.x, point.y);
