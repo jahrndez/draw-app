@@ -10,6 +10,7 @@ import java.net.Socket;
  * Represents a player
  */
 public class Player {
+	private boolean drawer;
     private InetAddress ipAddress;
     private Socket socket;
     private String username;
@@ -20,6 +21,14 @@ public class Player {
         this.ipAddress = socket.getInetAddress();
         this.socket = socket;
         this.username = username;
+    }
+    
+    public void setIsDrawer(boolean drawing) {
+    	drawer = drawing;
+    }
+    
+    public boolean isDrawer() {
+    	return drawer;
     }
 
     public InetAddress getIpAddress() {
@@ -55,8 +64,9 @@ public class Player {
     public Object readFromPlayer() throws IOException, ClassNotFoundException {
         if (objectInputStream == null) {
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+            System.out.println("Creating input stream for player: " + username);
         }
-
+        
         return objectInputStream.readObject();
     }
 

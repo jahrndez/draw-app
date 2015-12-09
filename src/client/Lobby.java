@@ -57,6 +57,9 @@ public class Lobby implements GameScreen, Runnable {
 	    			currentPlayers.add(userAdd.getUserName());
 	    			updatePlayerList();
     			} else if (message instanceof GameStartAlert) {
+    				if (out == null)
+    					out = new ObjectOutputStream(socket.getOutputStream());
+                    out.flush();
     				game.goToGame(in, out);
     				break;
     			}

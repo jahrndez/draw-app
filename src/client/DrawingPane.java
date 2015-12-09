@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,12 +38,13 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
+import interfaces.DrawInfo;
 import interfaces.TurnStartAlert;
 
 /**
  * Serves as the pane on which 2D graphics will be displayed.
  */
-public class DrawingPane implements GameScreen{
+public class DrawingPane implements GameScreen, Runnable {
 
     /** Image used to make changes. */
     private BufferedImage canvasImage;
@@ -59,8 +61,9 @@ public class DrawingPane implements GameScreen{
     private JLabel imageLabel;
 
     private boolean dirty = false;
+    private int strokeSize = 3;
     private Stroke stroke = new BasicStroke(
-            3,BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND,1.7f);
+            strokeSize,BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND,1.7f);
     private RenderingHints renderingHints;
 
     private Point lastPoint1;
@@ -88,13 +91,45 @@ public class DrawingPane implements GameScreen{
 			e.printStackTrace();
 		}
 
-        // TODO: Initialize to drawing for debugging purposes only. Server will determine current state
         STATE = State.GUESSING;
         if (currentTurn.isDrawer()) {
         	STATE = State.DRAWING;
         	guess.setText(currentTurn.getWord());
         	guess.setEditable(false);
         }
+    }
+    
+    public void run() {
+    	while(true) {
+	    	if (STATE == State.GUESSING) {
+	    		try {
+					DrawInfo di = (DrawInfo) in.readObject();
+					
+					Graphics2D graphics = this.canvasImage.createGraphics();
+			        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			        graphics.setRenderingHints(renderingHints);
+			        graphics.setColor(di.color);
+			        graphics.setStroke(new BasicStroke(
+			        		di.strokeSize,
+	                        BasicStroke.CAP_ROUND,
+	                        BasicStroke.JOIN_ROUND,
+	                        1.7f));
+			        GeneralPath path = di.path;
+	
+			        graphics.draw(path);
+	
+			        graphics.dispose();
+			        this.imageLabel.repaint();
+			        dirty = true;
+				} catch (SocketException e) {
+					System.err.println("Disconnect from Server");
+					e.printStackTrace();
+					break;
+				} catch (ClassNotFoundException | IOException e) {
+					e.printStackTrace();
+				} 
+	    	}
+    	}
     }
     
     public JComponent getGui() {
@@ -137,14 +172,15 @@ public class DrawingPane implements GameScreen{
 
             setColor(currentColor);
 
-            final SpinnerNumberModel strokeModel = new SpinnerNumberModel(3, 1, 16, 1);
+            final SpinnerNumberModel strokeModel = new SpinnerNumberModel(strokeSize, 1, 16, 1);
             JSpinner strokeSize = new JSpinner(strokeModel);
 
             ChangeListener strokeListener = event -> {
                 Object o = strokeModel.getValue();
                 Integer i = (Integer) o;
+                this.strokeSize = i.intValue();
                 stroke = new BasicStroke(
-                        i.intValue(),
+                		this.strokeSize,
                         BasicStroke.CAP_ROUND,
                         BasicStroke.JOIN_ROUND,
                         1.7f);
@@ -235,9 +271,17 @@ public class DrawingPane implements GameScreen{
             GeneralPath path = new GeneralPath();
             path.moveTo(lastPoint2.x, lastPoint2.y);
             path.curveTo(lastPoint2.x, lastPoint2.y, lastPoint1.x, lastPoint1.y, point.x, point.y);
-            // TODO: Send GeneralPath to server as well using ObjectOutputStream
-            System.out.println("GeneralPath");
             graphics.draw(path);
+            // TODO: Send GeneralPath to server as well using ObjectOutputStream
+            try {
+            	if (STATE == State.DRAWING) {
+                    out.flush();
+        			out.writeObject(new DrawInfo(path, currentColor, strokeSize));
+            	}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         } else {
             graphics.drawLine(point.x, point.y, point.x, point.y);
         }

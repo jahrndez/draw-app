@@ -1,19 +1,20 @@
 package server;
 
-import interfaces.CreateJoinRequest;
-import interfaces.CreateJoinResponse;
-import interfaces.PingResponse;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import interfaces.CreateJoinRequest;
+import interfaces.CreateJoinResponse;
+import interfaces.PingResponse;
 
 /**
  * Will handle new connections and dispatch into individual sessions (games)

@@ -1,14 +1,29 @@
 package server;
 
-import interfaces.*;
-
 import java.io.IOException;
 import java.net.Socket;
-import java.util.*;
+import java.net.SocketException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import interfaces.CorrectAnswerAlert;
+import interfaces.DrawInfo;
+import interfaces.GameEndAlert;
+import interfaces.GameStart;
+import interfaces.GameStartAlert;
+import interfaces.LobbyMessage;
+import interfaces.NewUserAlert;
+import interfaces.TurnEndAlert;
+import interfaces.TurnStartAlert;
 
 /**
  * Represents a single game session (single lobby)
@@ -136,18 +151,23 @@ public class Session {
             // Empty out guess queue
             guessQueue = new ConcurrentLinkedQueue<>();
 
-            // Handle guesses in parallel
             for (Player player : points.keySet()) {
-                (new Thread(new GuessHandler(player, word))).start();
+            	player.setIsDrawer(false);
             }
 
             // Alert players of turn start
             LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername());
             communicateToAllExclude(turnStart, currentDrawer);
+            currentDrawer.setIsDrawer(true);
             // Only provide word to drawer
             LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
             currentDrawer.writeToPlayer(turnStartDrawer);
 
+            // Handle guesses in parallel
+            for (Player player : points.keySet()) {
+                (new Thread(new GuessHandler(player, word))).start();
+            }
+            
             // Continually transmit drawing information from drawer to guessers
             while (!isTurnOver.get()) {
                 try {
@@ -159,7 +179,12 @@ public class Session {
                     }
 
                     communicateToAllExclude(drawInfo, currentDrawer);
-                } catch (ClassNotFoundException e) {
+                } catch (SocketException e) { 
+                	//TODO: Better fail case for when the host disconnects
+                	System.out.println("Host disconnected");
+                	e.printStackTrace();
+                	return;
+                }catch (ClassNotFoundException | IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -259,7 +284,7 @@ public class Session {
         public void run() {
             try {
                 boolean done = false;
-                while (state == SessionState.GUESSING && !done) {
+                while (!player.isDrawer() && state == SessionState.GUESSING && !done) {
                     String guess = (String) player.readFromPlayer();
                     guessQueue.add(new Guess(player, guess));
                     if (correctWord.equals(guess)) {
