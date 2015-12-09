@@ -11,6 +11,8 @@ import java.awt.RenderingHints;
 import java.awt.RenderingHints.Key;
 import java.awt.Stroke;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
@@ -39,6 +41,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
 import interfaces.DrawInfo;
+import interfaces.LobbyMessage;
 import interfaces.TurnStartAlert;
 
 /**
@@ -72,6 +75,7 @@ public class DrawingPane implements GameScreen, Runnable {
     private ObjectOutputStream out;
     private TurnStartAlert currentTurn;
     private JTextArea guess;
+    private String lastGuess;
     
     private static State STATE;
 
@@ -103,24 +107,33 @@ public class DrawingPane implements GameScreen, Runnable {
     	while(true) {
 	    	if (STATE == State.GUESSING) {
 	    		try {
-					DrawInfo di = (DrawInfo) in.readObject();
+					LobbyMessage message = (LobbyMessage) in.readObject();
 					
-					Graphics2D graphics = this.canvasImage.createGraphics();
-			        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			        graphics.setRenderingHints(renderingHints);
-			        graphics.setColor(di.color);
-			        graphics.setStroke(new BasicStroke(
-			        		di.strokeSize,
-	                        BasicStroke.CAP_ROUND,
-	                        BasicStroke.JOIN_ROUND,
-	                        1.7f));
-			        GeneralPath path = di.path;
-	
-			        graphics.draw(path);
-	
-			        graphics.dispose();
-			        this.imageLabel.repaint();
-			        dirty = true;
+					if (message.type() == LobbyMessage.MessageType.DRAW_INFO) {
+						DrawInfo di = (DrawInfo)message;
+						
+						Graphics2D graphics = this.canvasImage.createGraphics();
+				        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				        graphics.setRenderingHints(renderingHints);
+				        graphics.setColor(di.color);
+				        graphics.setStroke(new BasicStroke(
+				        		di.strokeSize,
+		                        BasicStroke.CAP_ROUND,
+		                        BasicStroke.JOIN_ROUND,
+		                        1.7f));
+				        GeneralPath path = di.path;
+		
+				        graphics.draw(path);
+		
+				        graphics.dispose();
+				        this.imageLabel.repaint();
+				        dirty = true;
+					} else if (message.type() == LobbyMessage.MessageType.CORRECT_ANSWER) {
+						System.out.println("Correct Guess!");
+						guess.setEditable(false);
+						guess.setBackground(Color.green);
+						guess.setText(lastGuess);
+					}
 				} catch (SocketException e) {
 					System.err.println("Disconnect from Server");
 					e.printStackTrace();
@@ -219,6 +232,7 @@ public class DrawingPane implements GameScreen, Runnable {
             clear(canvasImage, Color.WHITE);
             
             guess = new JTextArea();
+            guess.addKeyListener(new GuessKeyListener());
             gui.add(guess, BorderLayout.PAGE_END);
         }
 
@@ -322,6 +336,31 @@ public class DrawingPane implements GameScreen, Runnable {
             reportPositionAndColor(event);
         }
 
+    }
+    
+    class GuessKeyListener implements KeyListener {
+
+		@Override
+		public void keyPressed(KeyEvent arg0) {
+			if (arg0.getKeyCode() == KeyEvent.VK_ENTER) {
+				String g = guess.getText();
+				guess.setText("");
+				arg0.consume();
+				lastGuess = g;
+
+				try {
+					out.writeObject(g);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void keyReleased(KeyEvent arg0) {}
+		@Override
+		public void keyTyped(KeyEvent arg0) {}
+    	
     }
 
     private void reportPositionAndColor(MouseEvent me) {

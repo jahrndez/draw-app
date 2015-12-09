@@ -287,10 +287,13 @@ public class Session {
                 while (!player.isDrawer() && state == SessionState.GUESSING && !done) {
                     String guess = (String) player.readFromPlayer();
                     guessQueue.add(new Guess(player, guess));
+                    System.out.print(player.getUsername() + " guessed \"" + guess + "\", which was ");
                     if (correctWord.equals(guess)) {
+                    	System.out.println("correct");
                         done = true;
                         player.writeToPlayer(new CorrectAnswerAlert());
-                    }
+                    } else
+                    	System.out.println("incorrect");
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
