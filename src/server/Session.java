@@ -162,15 +162,16 @@ public class Session {
 
                         // Map<Player, Integer>  ->  Map<String, Integer>
                         Map<String, Integer> currentPoints =
-                                points.
-                                        entrySet().
-                                        stream().
-                                        collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
+                                points
+                                .entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
 
                         // Alert all players that the turn has ended and send current points of all players
                         LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
                         try {
-							communicateToAll(turnEnd);
+                            System.out.println("Communicating to players that the turn has ended.");
+                            communicateToAll(turnEnd);
 						} catch (IOException e1) {
 							// TODO Auto-generated catch block
 							e1.printStackTrace();
@@ -195,7 +196,7 @@ public class Session {
                 currentDrawer.writeToPlayer(turnStartDrawer);
 
                 // Handle guesses in parallel
-                List<GuessHandler> guessers = new ArrayList<GuessHandler>();
+                List<GuessHandler> guessers = new ArrayList<>();
                 for (Player player : points.keySet()) {
                 	GuessHandler g = new GuessHandler(player, word);
                     (new Thread(g)).start();

@@ -61,7 +61,7 @@ public class DrawingPane implements GameScreen, Runnable {
     private JTextArea guess;
     private String lastGuess;
 
-    private JTextArea scores;
+    private JLabel scores;
     private Set<String> beginningPlayers;
     
     private static State STATE;
@@ -86,14 +86,16 @@ public class DrawingPane implements GameScreen, Runnable {
     }
     
     public void run() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html>");
+        for (String s : beginningPlayers) {
+            sb.append(humanReadableUsername(s)).append(": 0").append("<br>");
+        }
+        sb.append("</html>");
+
+        scores.setText(sb.toString());
     	while(true) {
             try {
-                StringBuilder sb = new StringBuilder();
-                for (String s : beginningPlayers) {
-                    sb.append(humanReadableUsername(s)).append(": 0").append("\n");
-                }
-
-                scores.setText(sb.toString());
                 LobbyMessage message = (LobbyMessage) in.readObject();
 
                 switch (message.type()) {
@@ -173,21 +175,24 @@ public class DrawingPane implements GameScreen, Runnable {
                         break;
 
                     case TURN_END:
+                        System.out.println("Server has ended the turn");
                         TurnEndAlert turnEndAlert = (TurnEndAlert) message;
                         List<Map.Entry> points = new ArrayList<>(turnEndAlert.getCurrentPoints().entrySet());
-                        Collections.sort(points, (o1, o2) -> (Integer) o1.getValue() - (Integer) o2.getValue());
+                        Collections.sort(points, (o1, o2) -> (Integer) o2.getValue() - (Integer) o1.getValue());
                         StringBuilder s = new StringBuilder();
+                        s.append("<html>");
                         for (Map.Entry entry : points) {
-                            s.append(humanReadableUsername((String) entry.getKey())).append(": ").append(entry.getValue()).append("\n");
+                            s.append(humanReadableUsername((String) entry.getKey())).append(": ").append(entry.getValue()).append("<br>");
                         }
+                        s.append("</html>");
 
                         guess.setBackground(Color.white);
                         if (STATE == State.GUESSING)
                         	out.writeObject("");
                         else 
                             out.writeObject(new DrawInfo());
-                        scores.setText("");
                         scores.setText(s.toString());
+                        System.out.println(s.toString());
                         STATE = State.NO_GAME;
                         break;
 
@@ -303,8 +308,8 @@ public class DrawingPane implements GameScreen, Runnable {
             guess.addKeyListener(new GuessKeyListener());
             gui.add(guess, BorderLayout.PAGE_END);
 
-            scores = new JTextArea();
-            scores.setEditable(false);
+            scores = new JLabel();
+//            scores.setEditable(false);
             scores.setPreferredSize(new Dimension(100, 640));
             gui.add(scores, BorderLayout.EAST);
         }
