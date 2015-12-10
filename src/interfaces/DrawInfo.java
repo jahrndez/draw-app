@@ -11,17 +11,17 @@ import java.io.Serializable;
 public class DrawInfo extends LobbyMessage implements Serializable {
     public GeneralPath path;
     public Color color;
-    public Stroke stroke;
+    public int strokeSize;
     public boolean clear;
 
     /**
      * Normal DrawInfo; represents drawing data
      */
-    public DrawInfo(GeneralPath path, Color color, Stroke stroke) {
+    public DrawInfo(GeneralPath path, Color color, int strokeSize) {
         this.type = MessageType.DRAW_INFO;
         this.path = path;
         this.color = color;
-        this.stroke = stroke;
+        this.strokeSize = strokeSize;
         this.clear = false;
     }
 
