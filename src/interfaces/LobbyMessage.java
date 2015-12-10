@@ -17,6 +17,7 @@ public abstract class LobbyMessage implements Serializable {
         TURN_START,
         TURN_END,
         CORRECT_ANSWER,
+        INCORRECT_ANSWER,
         DRAW_INFO,
         PING_RESPONSE
     }
