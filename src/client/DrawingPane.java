@@ -249,8 +249,10 @@ public class DrawingPane implements GameScreen, Runnable {
         imageLabel.repaint();
 
         try {
-            out.flush();
-            out.writeObject(new DrawInfo(currentColor));
+            if (STATE == State.DRAWING) {
+                out.flush();
+                out.writeObject(new DrawInfo(currentColor));
+            }
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
