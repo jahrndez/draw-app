@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,9 @@ public class Session {
                 e1.printStackTrace();
             }
 
-            LobbyMessage gameStartAlert = new GameStartAlert();
+            Set<String> currentPlayers = new HashSet<>();
+            points.keySet().stream().forEach(player -> currentPlayers.add(player.getUsername()));
+            LobbyMessage gameStartAlert = new GameStartAlert(currentPlayers);
             System.out.println("Start Game");
             communicateToAll(gameStartAlert);
             state = SessionState.IN_PROGRESS;

@@ -61,7 +61,8 @@ public class DrawingPane implements GameScreen, Runnable {
     private JTextArea guess;
     private String lastGuess;
 
-    private JTextArea scores;
+    private JLabel scores;
+    private Set<String> beginningPlayers;
     
     private static State STATE;
 
@@ -75,11 +76,21 @@ public class DrawingPane implements GameScreen, Runnable {
     	in = input;
     	out = output;
     }
+
+    public void setBeginningPlayers(Set<String> beginningPlayers) {
+        this.beginningPlayers = beginningPlayers;
+    }
     
     public void run() {
     	while(true) {
             try {
-                LobbyMessage message = (LobbyMessage) in.readObject();	
+                StringBuilder sb = new StringBuilder();
+                for (String s : beginningPlayers) {
+                    sb.append(s).append("\n");
+                }
+
+                scores.setText(sb.toString());
+                LobbyMessage message = (LobbyMessage) in.readObject();
 
                 switch (message.type()) {
                 
@@ -163,7 +174,7 @@ public class DrawingPane implements GameScreen, Runnable {
                         Collections.sort(points, (o1, o2) -> (Integer) o1.getValue() - (Integer) o2.getValue());
                         StringBuilder s = new StringBuilder();
                         for (Map.Entry entry : points) {
-                            s.append(entry.getKey()).append(": ").append(entry.getValue());
+                            s.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
                         }
 
                         guess.setBackground(Color.white);
@@ -172,7 +183,7 @@ public class DrawingPane implements GameScreen, Runnable {
                         else 
                             out.writeObject(new DrawInfo());
                         scores.setText("");
-                        scores.append(s.toString());
+                        scores.setText(s.toString());
                         STATE = State.NO_GAME;
                         break;
 
@@ -288,7 +299,7 @@ public class DrawingPane implements GameScreen, Runnable {
             guess.addKeyListener(new GuessKeyListener());
             gui.add(guess, BorderLayout.PAGE_END);
 
-            scores = new JTextArea();
+            scores = new JLabel();
             scores.setPreferredSize(new Dimension(100, 640));
             gui.add(scores, BorderLayout.EAST);
         }
