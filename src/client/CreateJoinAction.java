@@ -9,8 +9,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Map;
 
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
 import interfaces.CreateJoinRequest;
 import interfaces.CreateJoinResponse;
@@ -41,9 +40,16 @@ public class CreateJoinAction implements ActionListener {
                 oos.writeObject(ping);
                 PingResponse response = (PingResponse) ois.readObject();
                 Map<Integer, Integer> games = response.getSessionIdsToPlayerCounts();
-            	int id = Integer.parseInt(JOptionPane.showInputDialog("Available Games: \n"
-                        + buildAvailableGamesString(games)
-                        + "Give Session ID:"));
+
+                JPanel panel = new JPanel();
+                panel.add(new JLabel("Please choose a game to join:"));
+                JComboBox<String> comboBox = buildComboBox(games);
+                panel.add(comboBox);
+
+                int result = JOptionPane.showConfirmDialog(null, panel, "Lobby Selection", JOptionPane.OK_CANCEL_OPTION);
+                if (result != JOptionPane.OK_OPTION)
+                    return;
+                int id = parseSelection((String) comboBox.getSelectedItem());
             	System.out.println("Attempting to join game with id: " + id);
             	request = new CreateJoinRequest(myUsername, id);
             }
@@ -64,19 +70,19 @@ public class CreateJoinAction implements ActionListener {
     	} catch (IOException | ClassNotFoundException e) {
     		e.printStackTrace();
     	}
-	}
+    }
 
-    private String buildAvailableGamesString(Map<Integer, Integer> games) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("\tID\t# Players\n");
+    private JComboBox<String> buildComboBox(Map<Integer, Integer> games) {
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
         for (Map.Entry entry : games.entrySet()) {
-            builder.append("\t")
-                    .append(entry.getKey())
-                    .append("\t")
-                    .append(entry.getValue())
-                    .append("\n");
+            String players = (Integer) entry.getValue() == 1 ? " player" : " players";
+            model.addElement("ID: " + entry.getKey() + " | " + entry.getValue() + players);
         }
 
-        return builder.toString();
+        return new JComboBox<>(model);
+    }
+
+    private int parseSelection(String selection) {
+        return Integer.parseInt(selection.split(":")[1].split("\\s+")[1]);
     }
 }

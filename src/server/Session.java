@@ -97,7 +97,11 @@ public class Session {
         return points.get(player);
     }
 
-    // TODO: Handle client disconnect
+    public synchronized void shutDownSession() {
+        SessionPool.getSessionPool().removeSession(getSessionId());
+        // TODO: possibly close each player's stream. What ramifications does that have if a player wants later join a different game?
+    }
+
     /**
      * Called once per session, by the thread that created this game session.
      * Contains logic for game, including turn-taking and direct communication with clients.
@@ -208,7 +212,7 @@ public class Session {
 
         } catch (EOFException e) {
             System.out.println("Player quit. Ending game.");
-            return;
+            shutDownSession();
             // TODO: Gracefully handle players exiting
         }
         // TODO: Follow-up: perhaps allow clients to restart current session
