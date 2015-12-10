@@ -25,18 +25,7 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JColorChooser;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.JToolBar;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
@@ -159,6 +148,7 @@ public class DrawingPane implements GameScreen, Runnable {
 
                     case INCORRECT_ANSWER:
                         System.out.println("Incorrect guess :(");
+                        guess.setBackground(Color.red);
                         break;
 
                     case TURN_END:
@@ -394,7 +384,9 @@ public class DrawingPane implements GameScreen, Runnable {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-			}
+			} else {
+                guess.setBackground(Color.white);
+            }
 		}
 
 		@Override
