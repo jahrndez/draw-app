@@ -1,5 +1,6 @@
 package server;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -102,108 +103,114 @@ public class Session {
      * Contains logic for game, including turn-taking and direct communication with clients.
      */
     public void start() throws IOException {
-    	try {
-    		Object gameStart = hostPlayer.readFromPlayer();
-			if (!(gameStart instanceof GameStart)) {
-              System.out.println("Expected GameStart from host player, instead received " + gameStart.getClass().getSimpleName());
-              return;
-          }
-		} catch (ClassNotFoundException e1) {
-			e1.printStackTrace();
-		}
-    	
-        LobbyMessage gameStartAlert = new GameStartAlert();
-        System.out.println("Start Game");
-        communicateToAll(gameStartAlert);
-        state = SessionState.IN_PROGRESS;
-
-        initializeTurnOrder();
-
-        boolean winnerExists = false; // true when some player hits POINTS_FOR_WIN
-
-        while (!winnerExists) {
-            Player currentDrawer = turnOrder.remove();
-            turnOrder.add(currentDrawer);
-
-            state = SessionState.GUESSING;
-
-            String word = WordBank.getWordBank().getNextWord(getSessionId());
-
-            AtomicBoolean isTurnOver = new AtomicBoolean(false);
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    isTurnOver.set(true);
-                    state = SessionState.IN_PROGRESS;
+        try {
+            try {
+                Object gameStart = hostPlayer.readFromPlayer();
+                if (!(gameStart instanceof GameStart)) {
+                    System.out.println("Expected GameStart from host player, instead received " + gameStart.getClass().getSimpleName());
+                    return;
                 }
-            }, TURN_LENGTH);
-
-            // Empty out guess queue
-            guessQueue = new ConcurrentLinkedQueue<>();
-
-            for (Player player : points.keySet()) {
-            	player.setIsDrawer(false);
+            } catch (ClassNotFoundException e1) {
+                e1.printStackTrace();
             }
 
-            // Alert players of turn start
-            LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername());
-            communicateToAllExclude(turnStart, currentDrawer);
-            currentDrawer.setIsDrawer(true);
-            // Only provide word to drawer
-            LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
-            currentDrawer.writeToPlayer(turnStartDrawer);
+            LobbyMessage gameStartAlert = new GameStartAlert();
+            System.out.println("Start Game");
+            communicateToAll(gameStartAlert);
+            state = SessionState.IN_PROGRESS;
 
-            // Handle guesses in parallel
-            for (Player player : points.keySet()) {
-                (new Thread(new GuessHandler(player, word))).start();
-            }
-            
-            // Continually transmit drawing information from drawer to guessers
-            while (!isTurnOver.get()) {
-                try {
-                    LobbyMessage drawInfo = (LobbyMessage) currentDrawer.readFromPlayer();
-                    if (!(drawInfo instanceof DrawInfo)) {
-                        System.out.println("Unexpected LobbyMessage from drawing client. Expected DrawInfo but received "
-                                + drawInfo.getClass().getSimpleName());
-                        continue;
+            initializeTurnOrder();
+
+            boolean winnerExists = false; // true when some player hits POINTS_FOR_WIN
+
+            while (!winnerExists) {
+                Player currentDrawer = turnOrder.remove();
+                turnOrder.add(currentDrawer);
+
+                state = SessionState.GUESSING;
+
+                String word = WordBank.getWordBank().getNextWord(getSessionId());
+
+                AtomicBoolean isTurnOver = new AtomicBoolean(false);
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        isTurnOver.set(true);
+                        state = SessionState.IN_PROGRESS;
                     }
+                }, TURN_LENGTH);
 
-                    communicateToAllExclude(drawInfo, currentDrawer);
-                } catch (SocketException e) { 
-                	//TODO: Better fail case for when the host disconnects
-                	System.out.println("Host disconnected");
-                	e.printStackTrace();
-                	return;
-                }catch (ClassNotFoundException | IOException e) {
-                    e.printStackTrace();
+                // Empty out guess queue
+                guessQueue = new ConcurrentLinkedQueue<>();
+
+                for (Player player : points.keySet()) {
+                    player.setIsDrawer(false);
+                }
+
+                // Alert players of turn start
+                LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername());
+                communicateToAllExclude(turnStart, currentDrawer);
+                currentDrawer.setIsDrawer(true);
+                // Only provide word to drawer
+                LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
+                currentDrawer.writeToPlayer(turnStartDrawer);
+
+                // Handle guesses in parallel
+                for (Player player : points.keySet()) {
+                    (new Thread(new GuessHandler(player, word))).start();
+                }
+
+                // Continually transmit drawing information from drawer to guessers
+                while (!isTurnOver.get()) {
+                    try {
+                        LobbyMessage drawInfo = (LobbyMessage) currentDrawer.readFromPlayer();
+                        if (!(drawInfo instanceof DrawInfo)) {
+                            System.out.println("Unexpected LobbyMessage from drawing client. Expected DrawInfo but received "
+                                    + drawInfo.getClass().getSimpleName());
+                            continue;
+                        }
+
+                        communicateToAllExclude(drawInfo, currentDrawer);
+                    } catch (SocketException e) {
+                        //TODO: Better fail case for when the host disconnects
+                        System.out.println("Host disconnected");
+                        e.printStackTrace();
+                        return;
+                    } catch (ClassNotFoundException | IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                tallyTurnPoints(word, currentDrawer);
+
+                // Map<Player, Integer>  ->  Map<String, Integer>
+                Map<String, Integer> currentPoints =
+                        points.
+                                entrySet().
+                                stream().
+                                collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
+
+                // Alert all players that the turn has ended and send current points of all players
+                LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
+                communicateToAll(turnEnd);
+
+                for (Map.Entry entry : points.entrySet()) {
+                    if ((Integer) entry.getValue() >= POINTS_FOR_WIN) {
+                        winnerExists = true;
+                        break;
+                    }
                 }
             }
 
-            tallyTurnPoints(word, currentDrawer);
+            state = SessionState.ENDED;
+            communicateToAll(new GameEndAlert());
 
-            // Map<Player, Integer>  ->  Map<String, Integer>
-            Map<String, Integer> currentPoints =
-                    points.
-                    entrySet().
-                    stream().
-                    collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
-
-            // Alert all players that the turn has ended and send current points of all players
-            LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
-            communicateToAll(turnEnd);
-
-            for (Map.Entry entry : points.entrySet()) {
-                if ((Integer) entry.getValue() >= POINTS_FOR_WIN) {
-                    winnerExists = true;
-                    break;
-                }
-            }
+        } catch (EOFException e) {
+            System.out.println("Player quit. Ending game.");
+            return;
+            // TODO: Gracefully handle players exiting
         }
-
-        state = SessionState.ENDED;
-        communicateToAll(new GameEndAlert());
-
         // TODO: Follow-up: perhaps allow clients to restart current session
     }
 
