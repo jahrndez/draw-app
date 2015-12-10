@@ -105,20 +105,34 @@ public class DrawingPane implements GameScreen, Runnable {
     
     public void run() {
     	while(true) {
-	    	if (STATE == State.GUESSING) {
-	    		try {
-					LobbyMessage message = (LobbyMessage) in.readObject();
-					
-					if (message.type() == LobbyMessage.MessageType.DRAW_INFO) {
-						DrawInfo di = (DrawInfo)message;
-						
-						Graphics2D graphics = this.canvasImage.createGraphics();
-				        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-				        graphics.setRenderingHints(renderingHints);
-				        graphics.setColor(di.color);
+            try {
+                LobbyMessage message = (LobbyMessage) in.readObject();
+
+                switch (message.type()) {
+
+                    case TURN_START:
+                        TurnStartAlert turnStartAlert = (TurnStartAlert) message;
+                        if (turnStartAlert.isDrawer()) {
+                            System.out.println("I'm currently the drawer");
+                            STATE = State.DRAWING;
+                        } else {
+                            System.out.println("I'm currently guessing");
+                            STATE = State.GUESSING;
+                        }
+                        break;
+
+                    case DRAW_INFO:
+                        DrawInfo di = (DrawInfo) message;
+
+                        Graphics2D graphics = this.canvasImage.createGraphics();
+                        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        graphics.setRenderingHints(renderingHints);
+                        graphics.setColor(di.color);
 
                         if (di.isClear()) {
                             graphics.fillRect(0, 0, canvasImage.getWidth(), canvasImage.getHeight());
+                            graphics.dispose();
+                            imageLabel.repaint();
                         } else {
                             graphics.setStroke(new BasicStroke(
                                     this.strokeSize,
@@ -129,24 +143,37 @@ public class DrawingPane implements GameScreen, Runnable {
                             graphics.draw(path);
                         }
 
-				        graphics.dispose();
-				        this.imageLabel.repaint();
-				        dirty = true;
-					} else if (message.type() == LobbyMessage.MessageType.CORRECT_ANSWER) {
-						System.out.println("Correct Guess!");
-						guess.setEditable(false);
-						guess.setBackground(Color.green);
-						guess.setText(lastGuess);
-					}
-				} catch (SocketException e) {
-					System.err.println("Disconnect from Server");
-					e.printStackTrace();
-					break;
-				} catch (ClassNotFoundException | IOException e) {
-					e.printStackTrace();
-				} 
-	    	}
-    	}
+                        graphics.dispose();
+                        this.imageLabel.repaint();
+                        dirty = true;
+                        break;
+
+                    case CORRECT_ANSWER:
+                        System.out.println("Correct Guess!");
+                        guess.setEditable(false);
+                        guess.setBackground(Color.green);
+                        guess.setText(lastGuess);
+                        break;
+
+                    case INCORRECT_ANSWER:
+                        System.out.println("Incorrect guess :(");
+                        break;
+
+                    case TURN_END:
+                        STATE = State.NO_GAME;
+                        break;
+
+                    case GAME_END:
+                        return;
+                }
+            } catch (SocketException e) {
+                System.err.println("Disconnect from Server");
+                e.printStackTrace();
+                break;
+            } catch (ClassNotFoundException | IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
     
     public JComponent getGui() {

@@ -15,15 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import interfaces.CorrectAnswerAlert;
-import interfaces.DrawInfo;
-import interfaces.GameEndAlert;
-import interfaces.GameStart;
-import interfaces.GameStartAlert;
-import interfaces.LobbyMessage;
-import interfaces.NewUserAlert;
-import interfaces.TurnEndAlert;
-import interfaces.TurnStartAlert;
+import interfaces.*;
 
 /**
  * Represents a single game session (single lobby)
@@ -117,7 +109,6 @@ public class Session {
               return;
           }
 		} catch (ClassNotFoundException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
     	
@@ -285,15 +276,23 @@ public class Session {
             try {
                 boolean done = false;
                 while (!player.isDrawer() && state == SessionState.GUESSING && !done) {
-                    String guess = (String) player.readFromPlayer();
+                    Object o = player.readFromPlayer();
+                    String guess;
+                    if (o instanceof String) {
+                        guess = (String) o;
+                    } else {
+                        continue;
+                    }
                     guessQueue.add(new Guess(player, guess));
                     System.out.print(player.getUsername() + " guessed \"" + guess + "\", which was ");
                     if (correctWord.equals(guess)) {
                     	System.out.println("correct");
                         done = true;
                         player.writeToPlayer(new CorrectAnswerAlert());
-                    } else
-                    	System.out.println("incorrect");
+                    } else {
+                        System.out.println("incorrect");
+                        player.writeToPlayer(new IncorrectAnswerAlert());
+                    }
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
