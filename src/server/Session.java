@@ -177,7 +177,7 @@ public class Session {
                         System.out.println("Host disconnected");
                         e.printStackTrace();
                         return;
-                    } catch (ClassNotFoundException | IOException e) {
+                    } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
                 }
