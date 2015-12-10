@@ -28,9 +28,8 @@ public class DrawInfo extends LobbyMessage implements Serializable {
     /**
      * Clear pane DrawInfo; represents a request to clear the canvas
      */
-    public DrawInfo(Color color) {
+    public DrawInfo() {
         this.type = MessageType.DRAW_INFO;
-        this.color = color;
         clear = true;
     }
 
