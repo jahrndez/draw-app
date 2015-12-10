@@ -116,15 +116,15 @@ public class DrawingPane implements GameScreen, Runnable {
 				        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 				        graphics.setRenderingHints(renderingHints);
 				        graphics.setColor(di.color);
-				        graphics.setStroke(new BasicStroke(
-				        		di.strokeSize,
-		                        BasicStroke.CAP_ROUND,
-		                        BasicStroke.JOIN_ROUND,
-		                        1.7f));
-				        GeneralPath path = di.path;
-		
-				        graphics.draw(path);
-		
+
+                        if (di.isClear()) {
+                            graphics.fillRect(0, 0, canvasImage.getWidth(), canvasImage.getHeight());
+                        } else {
+                            graphics.setStroke(di.stroke);
+                            GeneralPath path = di.path;
+                            graphics.draw(path);
+                        }
+
 				        graphics.dispose();
 				        this.imageLabel.repaint();
 				        dirty = true;
@@ -247,6 +247,14 @@ public class DrawingPane implements GameScreen, Runnable {
 
         graphics.dispose();
         imageLabel.repaint();
+
+        try {
+            out.flush();
+            out.writeObject(new DrawInfo(currentColor));
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     public void setImage(BufferedImage image) {
@@ -286,11 +294,10 @@ public class DrawingPane implements GameScreen, Runnable {
             path.moveTo(lastPoint2.x, lastPoint2.y);
             path.curveTo(lastPoint2.x, lastPoint2.y, lastPoint1.x, lastPoint1.y, point.x, point.y);
             graphics.draw(path);
-            // TODO: Send GeneralPath to server as well using ObjectOutputStream
             try {
             	if (STATE == State.DRAWING) {
                     out.flush();
-        			out.writeObject(new DrawInfo(path, currentColor, strokeSize));
+        			out.writeObject(new DrawInfo(path, currentColor, stroke));
             	}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
