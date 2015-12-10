@@ -17,15 +17,16 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.SocketException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
 import interfaces.DrawInfo;
 import interfaces.LobbyMessage;
+import interfaces.TurnEndAlert;
 import interfaces.TurnStartAlert;
 
 /**
@@ -60,6 +61,8 @@ public class DrawingPane implements GameScreen, Runnable {
     private TurnStartAlert currentTurn;
     private JTextArea guess;
     private String lastGuess;
+
+    private JTextArea scores;
     
     private static State STATE;
 
@@ -147,14 +150,24 @@ public class DrawingPane implements GameScreen, Runnable {
                                 .getSharedInstance()
                                 .getPopup(guess,
                                         new JLabel(" Incorrect "),
-                                        (int) guess.getLocationOnScreen().getX() + 2,
-                                        (int) guess.getLocationOnScreen().getY() + 6);
+                                        (int) guess.getLocationOnScreen().getX() + 10,
+                                        (int) guess.getLocationOnScreen().getY() + 10);
                         p.show();
                         new Timer(2000, e -> p.hide()).start();
                         guess.setBackground(new Color(250, 180, 180));
                         break;
 
                     case TURN_END:
+                        TurnEndAlert turnEndAlert = (TurnEndAlert) message;
+                        List<Map.Entry> points = new ArrayList<>(turnEndAlert.getCurrentPoints().entrySet());
+                        Collections.sort(points, (o1, o2) -> (Integer) o1.getValue() - (Integer) o2.getValue());
+                        StringBuilder s = new StringBuilder();
+                        for (Map.Entry entry : points) {
+                            s.append(entry.getKey()).append(": ").append(entry.getValue());
+                        }
+
+                        scores.setText("");
+                        scores.append(s.toString());
                         STATE = State.NO_GAME;
                         break;
 
@@ -269,6 +282,10 @@ public class DrawingPane implements GameScreen, Runnable {
             guess = new JTextArea();
             guess.addKeyListener(new GuessKeyListener());
             gui.add(guess, BorderLayout.PAGE_END);
+
+            scores = new JTextArea();
+            scores.setPreferredSize(new Dimension(100, 640));
+            gui.add(scores, BorderLayout.EAST);
         }
 
         return gui;
