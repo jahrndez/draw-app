@@ -3,4 +3,7 @@ out/
 cse461-project3.iml
 .idea/uiDesigner.xml
 bin/
-src/*.class
+src/server/*.class
+src/interfaces/*.class
+src/client/*.class
+

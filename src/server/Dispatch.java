@@ -28,6 +28,7 @@ public class Dispatch {
 
         try {
             ServerSocket listeningSocket = new ServerSocket(LISTENING_PORT);
+            System.out.println("Server listening on port " + listeningSocket.getLocalPort());
             while (true) {
                 Socket socket = listeningSocket.accept();
                 threadPool.execute(new HandleClient(socket));
