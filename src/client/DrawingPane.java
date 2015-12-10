@@ -85,6 +85,16 @@ public class DrawingPane implements GameScreen, Runnable {
                 
                     case TURN_START:
                         TurnStartAlert turnStartAlert = (TurnStartAlert) message;
+                        
+                        // clear out the canvas
+                        Graphics2D graphicsClear = this.canvasImage.createGraphics();
+                        graphicsClear.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        graphicsClear.setRenderingHints(renderingHints);
+                        graphicsClear.setColor(Color.WHITE);
+                        graphicsClear.fillRect(0, 0, canvasImage.getWidth(), canvasImage.getHeight());
+                        graphicsClear.dispose();
+                        imageLabel.repaint();
+                        
                         if (turnStartAlert.isDrawer()) {
                             System.out.println("I'm currently the drawer");
                             STATE = State.DRAWING;
@@ -93,6 +103,7 @@ public class DrawingPane implements GameScreen, Runnable {
                         } else {
                             System.out.println("I'm currently guessing");
                             STATE = State.GUESSING;
+                            guess.setText("");
                         	guess.setEditable(true);
                         }
                         break;
@@ -155,6 +166,11 @@ public class DrawingPane implements GameScreen, Runnable {
                             s.append(entry.getKey()).append(": ").append(entry.getValue());
                         }
 
+                        guess.setBackground(Color.white);
+                        if (STATE == State.GUESSING)
+                        	out.writeObject("");
+                        else 
+                            out.writeObject(new DrawInfo());
                         scores.setText("");
                         scores.append(s.toString());
                         STATE = State.NO_GAME;
@@ -389,7 +405,8 @@ public class DrawingPane implements GameScreen, Runnable {
 				lastGuess = g;
 
 				try {
-					out.writeObject(g);
+					if (g.length() > 0)
+						out.writeObject(g);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
