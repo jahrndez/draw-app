@@ -9,7 +9,7 @@ import java.util.*;
  * Single word bank used by all game sessions
  */
 public class WordBank {
-    public static String WORD_FILE = "res/words.txt";
+    public static String WORD_FILE = "../res/words.txt";
     private static WordBank _INSTANCE;
 
     // Provides a unique ordering of words in the bank for each game session
