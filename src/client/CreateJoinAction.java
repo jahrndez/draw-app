@@ -7,12 +7,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 import interfaces.CreateJoinRequest;
 import interfaces.CreateJoinResponse;
+import interfaces.PingResponse;
 
 public class CreateJoinAction implements ActionListener {
 	private static String JOIN = "Join Game";
@@ -35,7 +37,13 @@ public class CreateJoinAction implements ActionListener {
             String myUsername = game.getUsername();
             CreateJoinRequest request = null;
             if (arg0.getActionCommand().equals(JOIN)) {
-            	int id = Integer.parseInt(JOptionPane.showInputDialog("Give Session ID:"));
+                CreateJoinRequest ping = new CreateJoinRequest();
+                oos.writeObject(ping);
+                PingResponse response = (PingResponse) ois.readObject();
+                Map<Integer, Integer> games = response.getSessionIdsToPlayerCounts();
+            	int id = Integer.parseInt(JOptionPane.showInputDialog("Available Games: \n"
+                        + buildAvailableGamesString(games)
+                        + "Give Session ID:"));
             	System.out.println("Attempting to join game with id: " + id);
             	request = new CreateJoinRequest(myUsername, id);
             }
@@ -58,4 +66,17 @@ public class CreateJoinAction implements ActionListener {
     	}
 	}
 
+    private String buildAvailableGamesString(Map<Integer, Integer> games) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\tID\t# Players\n");
+        for (Map.Entry entry : games.entrySet()) {
+            builder.append("\t")
+                    .append(entry.getKey())
+                    .append("\t")
+                    .append(entry.getValue())
+                    .append("\n");
+        }
+
+        return builder.toString();
+    }
 }

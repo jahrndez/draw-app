@@ -56,25 +56,30 @@ public class Dispatch {
             try {
                 CreateJoinRequest createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
 
-                Session session;
-                switch (createJoinRequest.type()) {
-                    case CREATE:
-                        session = SessionPool.getSessionPool().createNewSession();
-                        break;
-                    case JOIN:
-                        session = SessionPool.getSessionPool().findSessionById(createJoinRequest.getSessionId());
-                        break;
-                    case PING:
-                        Map<Integer, Integer> idsToCounts =
-                                SessionPool.getSessionPool().
-                                        getAllSessions().
-                                        stream().
-                                        collect(Collectors.toMap(Session::getSessionId, Session::numPlayers));
+                Session session = null;
+                boolean ready = false;
+                while (!ready) {
+                    switch (createJoinRequest.type()) {
+                        case CREATE:
+                            session = SessionPool.getSessionPool().createNewSession();
+                            ready = true;
+                            break;
+                        case JOIN:
+                            session = SessionPool.getSessionPool().findSessionById(createJoinRequest.getSessionId());
+                            ready = true;
+                            break;
+                        case PING:
+                            Map<Integer, Integer> idsToCounts =
+                                    SessionPool.getSessionPool().
+                                            getAllSessions().
+                                            stream().
+                                            collect(Collectors.toMap(Session::getSessionId, Session::numPlayers));
 
-                        objectOutputStream.writeObject(new PingResponse(idsToCounts));
-                        return;
-                    default:
-                        session = null;
+                            objectOutputStream.writeObject(new PingResponse(idsToCounts));
+                            createJoinRequest = (CreateJoinRequest) objectInputStream.readObject();
+                        default:
+                            session = null;
+                    }
                 }
 
                 String username = createJoinRequest.getRequestingClientUserName() 

@@ -10,12 +10,7 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.RenderingHints.Key;
 import java.awt.Stroke;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -148,7 +143,15 @@ public class DrawingPane implements GameScreen, Runnable {
 
                     case INCORRECT_ANSWER:
                         System.out.println("Incorrect guess :(");
-                        guess.setBackground(Color.red);
+                        Popup p = PopupFactory
+                                .getSharedInstance()
+                                .getPopup(guess,
+                                        new JLabel(" Incorrect "),
+                                        (int) guess.getLocationOnScreen().getX() + 2,
+                                        (int) guess.getLocationOnScreen().getY() + 6);
+                        p.show();
+                        new Timer(2000, e -> p.hide()).start();
+                        guess.setBackground(new Color(250, 180, 180));
                         break;
 
                     case TURN_END:
