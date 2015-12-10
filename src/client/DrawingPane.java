@@ -141,7 +141,7 @@ public class DrawingPane implements GameScreen, Runnable {
                         } else {
                             graphics.setColor(di.color);
                             graphics.setStroke(new BasicStroke(
-                                    this.strokeSize,
+                                    di.strokeSize,
                                     BasicStroke.CAP_ROUND,
                                     BasicStroke.JOIN_ROUND,
                                     1.7f));
@@ -156,6 +156,14 @@ public class DrawingPane implements GameScreen, Runnable {
 
                     case CORRECT_ANSWER:
                         System.out.println("Correct Guess!");
+                        Popup p1 = PopupFactory
+                                .getSharedInstance()
+                                .getPopup(guess,
+                                        new JLabel(" Correct! "),
+                                        (int) guess.getLocationOnScreen().getX() + 10,
+                                        (int) guess.getLocationOnScreen().getY() - 20);
+                        p1.show();
+                        new Timer(2000, e -> p1.hide()).start();
                         guess.setEditable(false);
                         guess.setBackground(Color.green);
                         guess.setText(lastGuess);
@@ -163,14 +171,14 @@ public class DrawingPane implements GameScreen, Runnable {
 
                     case INCORRECT_ANSWER:
                         System.out.println("Incorrect guess :(");
-                        Popup p = PopupFactory
+                        Popup p2 = PopupFactory
                                 .getSharedInstance()
                                 .getPopup(guess,
                                         new JLabel(" Incorrect "),
                                         (int) guess.getLocationOnScreen().getX() + 10,
-                                        (int) guess.getLocationOnScreen().getY() + 10);
-                        p.show();
-                        new Timer(2000, e -> p.hide()).start();
+                                        (int) guess.getLocationOnScreen().getY() - 20);
+                        p2.show();
+                        new Timer(2000, e -> p2.hide()).start();
                         guess.setBackground(new Color(250, 180, 180));
                         break;
 

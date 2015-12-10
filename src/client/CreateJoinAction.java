@@ -67,9 +67,13 @@ public class CreateJoinAction implements ActionListener {
                 System.err.println("Failed");
                 return;
             }
-    	} catch (IOException | ClassNotFoundException e) {
-    		e.printStackTrace();
-    	}
+    	} catch (ClassNotFoundException e) {
+            e.printStackTrace();
+    	} catch (IOException e) {
+            JPanel panel = new JPanel();
+            panel.add(new JLabel("<html>The server specified is incorrect<br>or is not currently running games.<br><br>Try a different server.</html>"));
+            JOptionPane.showMessageDialog(null, panel, "Unrecognized Game Server", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     private JComboBox<String> buildComboBox(Map<Integer, Integer> games) {
