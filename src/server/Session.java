@@ -4,13 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -118,7 +112,9 @@ public class Session {
                 e1.printStackTrace();
             }
 
-            LobbyMessage gameStartAlert = new GameStartAlert();
+            Set<String> currentPlayers = new HashSet<>();
+            points.keySet().stream().forEach(player -> currentPlayers.add(player.getUsername()));
+            LobbyMessage gameStartAlert = new GameStartAlert(currentPlayers);
             System.out.println("Start Game");
             communicateToAll(gameStartAlert);
             state = SessionState.IN_PROGRESS;
