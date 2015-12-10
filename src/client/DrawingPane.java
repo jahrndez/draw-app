@@ -127,13 +127,15 @@ public class DrawingPane implements GameScreen, Runnable {
                         Graphics2D graphics = this.canvasImage.createGraphics();
                         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                         graphics.setRenderingHints(renderingHints);
-                        graphics.setColor(di.color);
+
 
                         if (di.isClear()) {
+                            graphics.setColor(Color.WHITE);
                             graphics.fillRect(0, 0, canvasImage.getWidth(), canvasImage.getHeight());
                             graphics.dispose();
                             imageLabel.repaint();
                         } else {
+                            graphics.setColor(di.color);
                             graphics.setStroke(new BasicStroke(
                                     this.strokeSize,
                                     BasicStroke.CAP_ROUND,
@@ -249,6 +251,15 @@ public class DrawingPane implements GameScreen, Runnable {
 
                 if (result == JOptionPane.OK_OPTION) {
                     clear(canvasImage, Color.WHITE);
+                    try {
+                        if (STATE == State.DRAWING) {
+                            out.flush();
+                            out.writeObject(new DrawInfo());
+                        }
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             };
 
@@ -278,16 +289,6 @@ public class DrawingPane implements GameScreen, Runnable {
 
         graphics.dispose();
         imageLabel.repaint();
-
-        try {
-            if (STATE == State.DRAWING) {
-                out.flush();
-                out.writeObject(new DrawInfo(currentColor));
-            }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
     }
 
     public void setImage(BufferedImage image) {
