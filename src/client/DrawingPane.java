@@ -120,7 +120,11 @@ public class DrawingPane implements GameScreen, Runnable {
                         if (di.isClear()) {
                             graphics.fillRect(0, 0, canvasImage.getWidth(), canvasImage.getHeight());
                         } else {
-                            graphics.setStroke(di.stroke);
+                            graphics.setStroke(new BasicStroke(
+                                    this.strokeSize,
+                                    BasicStroke.CAP_ROUND,
+                                    BasicStroke.JOIN_ROUND,
+                                    1.7f));
                             GeneralPath path = di.path;
                             graphics.draw(path);
                         }
@@ -299,7 +303,7 @@ public class DrawingPane implements GameScreen, Runnable {
             try {
             	if (STATE == State.DRAWING) {
                     out.flush();
-        			out.writeObject(new DrawInfo(path, currentColor, stroke));
+        			out.writeObject(new DrawInfo(path, currentColor, strokeSize));
             	}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
