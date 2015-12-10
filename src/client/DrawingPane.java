@@ -62,7 +62,7 @@ public class DrawingPane implements GameScreen, Runnable {
     private JTextArea guess;
     private String lastGuess;
 
-    private JLabel scores;
+    private JTextArea scores;
     private Set<String> beginningPlayers;
     
     private static State STATE;
@@ -94,13 +94,17 @@ public class DrawingPane implements GameScreen, Runnable {
     public void setBeginningPlayers(Set<String> beginningPlayers) {
         this.beginningPlayers = beginningPlayers;
     }
+
+    private String humanReadableUsername(String original) {
+        return original.split("\\(")[0].trim();
+    }
     
     public void run() {
     	while(true) {
             try {
                 StringBuilder sb = new StringBuilder();
                 for (String s : beginningPlayers) {
-                    sb.append(s).append("\n");
+                    sb.append(humanReadableUsername(s)).append(": 0").append("\n");
                 }
 
                 scores.setText(sb.toString());
@@ -174,7 +178,7 @@ public class DrawingPane implements GameScreen, Runnable {
                         Collections.sort(points, (o1, o2) -> (Integer) o1.getValue() - (Integer) o2.getValue());
                         StringBuilder s = new StringBuilder();
                         for (Map.Entry entry : points) {
-                            s.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                            s.append(humanReadableUsername((String) entry.getKey())).append(": ").append(entry.getValue()).append("\n");
                         }
 
                         scores.setText(s.toString());
@@ -293,7 +297,8 @@ public class DrawingPane implements GameScreen, Runnable {
             guess.addKeyListener(new GuessKeyListener());
             gui.add(guess, BorderLayout.PAGE_END);
 
-            scores = new JLabel();
+            scores = new JTextArea();
+            scores.setEditable(false);
             scores.setPreferredSize(new Dimension(100, 640));
             gui.add(scores, BorderLayout.EAST);
         }
