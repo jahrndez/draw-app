@@ -57,7 +57,6 @@ public class DrawingPane implements GameScreen, Runnable {
     private Point lastPoint2;
     private ObjectInputStream in;
     private ObjectOutputStream out;
-    private TurnStartAlert currentTurn;
     private JTextArea guess;
     private String lastGuess;
     
@@ -72,36 +71,26 @@ public class DrawingPane implements GameScreen, Runnable {
     public void registerStreams(ObjectInputStream input, ObjectOutputStream output) {
     	in = input;
     	out = output;
-    	
-    	try {
-    		currentTurn = (TurnStartAlert) in.readObject();
-		} catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
-		}
-
-        STATE = State.GUESSING;
-        if (currentTurn.isDrawer()) {
-        	STATE = State.DRAWING;
-        	guess.setText(currentTurn.getWord());
-        	guess.setEditable(false);
-        }
     }
     
     public void run() {
     	while(true) {
             try {
-                LobbyMessage message = (LobbyMessage) in.readObject();
+                LobbyMessage message = (LobbyMessage) in.readObject();	
 
                 switch (message.type()) {
-
+                
                     case TURN_START:
                         TurnStartAlert turnStartAlert = (TurnStartAlert) message;
                         if (turnStartAlert.isDrawer()) {
                             System.out.println("I'm currently the drawer");
                             STATE = State.DRAWING;
+                        	guess.setText(turnStartAlert.getWord());
+                        	guess.setEditable(false);
                         } else {
                             System.out.println("I'm currently guessing");
                             STATE = State.GUESSING;
+                        	guess.setEditable(true);
                         }
                         break;
 
