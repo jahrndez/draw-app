@@ -10,22 +10,30 @@ import java.io.Serializable;
  */
 public class DrawInfo extends LobbyMessage implements Serializable {
     public GeneralPath path;
-	//public Point point, lastPoint1, lastPoint2;
-	//public int px, py, lp1x, lp1y, lp2x, lp2y;
     public Color color;
-    public int strokeSize;
+    public Stroke stroke;
+    public boolean clear;
 
-    public DrawInfo(GeneralPath path, Color color, int strokeSize) {
+    /**
+     * Normal DrawInfo; represents drawing data
+     */
+    public DrawInfo(GeneralPath path, Color color, Stroke stroke) {
         this.type = MessageType.DRAW_INFO;
         this.path = path;
-//        px = p1.x;
-//        py = p1.y;
-//        lp1x = p2.x;
-//        lp1y = p2.y;
-//        lp2x = p3.x;
-//        lp2y = p3.y;
-        
         this.color = color;
-        this.strokeSize = strokeSize;
+        this.stroke = stroke;
+        this.clear = false;
+    }
+
+    /**
+     * Clear pane DrawInfo; represents a request to clear the canvas
+     */
+    public DrawInfo(Color color) {
+        this.color = color;
+        clear = true;
+    }
+
+    public boolean isClear() {
+        return clear;
     }
 }
