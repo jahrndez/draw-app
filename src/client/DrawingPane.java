@@ -58,7 +58,6 @@ public class DrawingPane implements GameScreen, Runnable {
     private Point lastPoint2;
     private ObjectInputStream in;
     private ObjectOutputStream out;
-    private TurnStartAlert currentTurn;
     private JTextArea guess;
     private String lastGuess;
 
@@ -76,19 +75,6 @@ public class DrawingPane implements GameScreen, Runnable {
     public void registerStreams(ObjectInputStream input, ObjectOutputStream output) {
     	in = input;
     	out = output;
-    	
-    	try {
-    		currentTurn = (TurnStartAlert) in.readObject();
-		} catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
-		}
-
-        STATE = State.GUESSING;
-        if (currentTurn.isDrawer()) {
-        	STATE = State.DRAWING;
-        	guess.setText(currentTurn.getWord());
-        	guess.setEditable(false);
-        }
     }
 
     public void setBeginningPlayers(Set<String> beginningPlayers) {
@@ -111,15 +97,29 @@ public class DrawingPane implements GameScreen, Runnable {
                 LobbyMessage message = (LobbyMessage) in.readObject();
 
                 switch (message.type()) {
-
+                
                     case TURN_START:
                         TurnStartAlert turnStartAlert = (TurnStartAlert) message;
+                        
+                        // clear out the canvas
+                        Graphics2D graphicsClear = this.canvasImage.createGraphics();
+                        graphicsClear.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        graphicsClear.setRenderingHints(renderingHints);
+                        graphicsClear.setColor(Color.WHITE);
+                        graphicsClear.fillRect(0, 0, canvasImage.getWidth(), canvasImage.getHeight());
+                        graphicsClear.dispose();
+                        imageLabel.repaint();
+                        
                         if (turnStartAlert.isDrawer()) {
                             System.out.println("I'm currently the drawer");
                             STATE = State.DRAWING;
+                        	guess.setText(turnStartAlert.getWord());
+                        	guess.setEditable(false);
                         } else {
                             System.out.println("I'm currently guessing");
                             STATE = State.GUESSING;
+                            guess.setText("");
+                        	guess.setEditable(true);
                         }
                         break;
 
@@ -181,6 +181,12 @@ public class DrawingPane implements GameScreen, Runnable {
                             s.append(humanReadableUsername((String) entry.getKey())).append(": ").append(entry.getValue()).append("\n");
                         }
 
+                        guess.setBackground(Color.white);
+                        if (STATE == State.GUESSING)
+                        	out.writeObject("");
+                        else 
+                            out.writeObject(new DrawInfo());
+                        scores.setText("");
                         scores.setText(s.toString());
                         STATE = State.NO_GAME;
                         break;
@@ -415,7 +421,8 @@ public class DrawingPane implements GameScreen, Runnable {
 				lastGuess = g;
 
 				try {
-					out.writeObject(g);
+					if (g.length() > 0)
+						out.writeObject(g);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

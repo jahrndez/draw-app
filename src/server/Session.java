@@ -4,13 +4,31 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import interfaces.*;
+import interfaces.CorrectAnswerAlert;
+import interfaces.DrawInfo;
+import interfaces.GameEndAlert;
+import interfaces.GameStart;
+import interfaces.GameStartAlert;
+import interfaces.IncorrectAnswerAlert;
+import interfaces.LobbyMessage;
+import interfaces.NewUserAlert;
+import interfaces.TurnEndAlert;
+import interfaces.TurnStartAlert;
 
 /**
  * Represents a single game session (single lobby)
@@ -138,6 +156,26 @@ public class Session {
                     public void run() {
                         isTurnOver.set(true);
                         state = SessionState.IN_PROGRESS;
+
+
+                        tallyTurnPoints(word, currentDrawer);
+
+                        // Map<Player, Integer>  ->  Map<String, Integer>
+                        Map<String, Integer> currentPoints =
+                                points.
+                                        entrySet().
+                                        stream().
+                                        collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
+
+                        // Alert all players that the turn has ended and send current points of all players
+                        LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
+                        try {
+							communicateToAll(turnEnd);
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+                        System.out.println("Turn end");
                     }
                 }, TURN_LENGTH);
 
@@ -157,21 +195,24 @@ public class Session {
                 currentDrawer.writeToPlayer(turnStartDrawer);
 
                 // Handle guesses in parallel
+                List<GuessHandler> guessers = new ArrayList<GuessHandler>();
                 for (Player player : points.keySet()) {
-                    (new Thread(new GuessHandler(player, word))).start();
+                	GuessHandler g = new GuessHandler(player, word);
+                    (new Thread(g)).start();
+                    guessers.add(g);
                 }
 
                 // Continually transmit drawing information from drawer to guessers
                 while (!isTurnOver.get()) {
                     try {
-                        LobbyMessage drawInfo = (LobbyMessage) currentDrawer.readFromPlayer();
+                        Object drawInfo = currentDrawer.readFromPlayer();
                         if (!(drawInfo instanceof DrawInfo)) {
                             System.out.println("Unexpected LobbyMessage from drawing client. Expected DrawInfo but received "
                                     + drawInfo.getClass().getSimpleName());
                             continue;
                         }
 
-                        communicateToAllExclude(drawInfo, currentDrawer);
+                        communicateToAllExclude((DrawInfo) drawInfo, currentDrawer);
                     } catch (SocketException e) {
                         //TODO: Better fail case for when the host disconnects
                         System.out.println("Host disconnected");
@@ -181,25 +222,21 @@ public class Session {
                         e.printStackTrace();
                     }
                 }
-
-                tallyTurnPoints(word, currentDrawer);
-
-                // Map<Player, Integer>  ->  Map<String, Integer>
-                Map<String, Integer> currentPoints =
-                        points.
-                                entrySet().
-                                stream().
-                                collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
-
-                // Alert all players that the turn has ended and send current points of all players
-                LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
-                communicateToAll(turnEnd);
-
+                
                 for (Map.Entry entry : points.entrySet()) {
                     if ((Integer) entry.getValue() >= POINTS_FOR_WIN) {
                         winnerExists = true;
                         break;
                     }
+                }
+                
+                // wait for guessers to send their confirmation message
+                int done = 0;
+                while(guessers.size() != done) {
+                	done = 0;
+                	for (GuessHandler g : guessers)
+                		if (g.finished)
+                			done++;
                 }
             }
 
@@ -273,6 +310,7 @@ public class Session {
     public class GuessHandler implements Runnable {
         private Player player;
         private String correctWord;
+        public boolean finished;
 
         public GuessHandler(Player player, String correctWord) {
             this.player = player;
@@ -290,6 +328,8 @@ public class Session {
                     } else {
                         continue;
                     }
+                    if (guess.length() == 0)
+                    	break;
                     guessQueue.add(new Guess(player, guess));
                     System.out.print(player.getUsername() + " guessed \"" + guess + "\", which was ");
                     if (correctWord.equals(guess)) {
@@ -304,6 +344,7 @@ public class Session {
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
+            finished = true;
         }
     }
 }
