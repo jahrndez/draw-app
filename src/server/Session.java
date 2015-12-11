@@ -34,7 +34,7 @@ import interfaces.TurnStartAlert;
  * Represents a single game session (single lobby)
  */
 public class Session {
-    public static final long TURN_LENGTH = 1000 * 15; // millis
+    public static final long TURN_LENGTH = 1000 * 60; // millis
     public static final int POINTS_FOR_WIN = 15;
 
     private final int sessionId;
@@ -44,6 +44,8 @@ public class Session {
     private Player currentDrawer;
     private Queue<Player> turnOrder;
     private Queue<Guess> guessQueue;
+    private TimerTask task;
+    private Timer timer;
 
     private int correctGuesses;
 
@@ -161,8 +163,8 @@ public class Session {
                 String word = WordBank.getWordBank().getNextWord(getSessionId());
 
                 AtomicBoolean isTurnOver = new AtomicBoolean(false);
-                Timer timer = new Timer();
-                TimerTask task = new TimerTask() {
+                timer = new Timer();
+                task = new TimerTask() {
                     @Override
                     public void run() {
                         isTurnOver.set(true);
@@ -230,12 +232,6 @@ public class Session {
                         }
 
                         communicateToAllExclude((DrawInfo) drawInfo, currentDrawer);
-
-                        // End the game when everyone has guessed correctly. Hacky solution since it relies on drawer input to reach this control point
-                        if (correctGuesses == points.size() - 1) {
-                            timer.cancel();
-                            task.run();
-                        }
                     } catch (SocketException e) {
                         //TODO: Better fail case for when the host disconnects
                         System.out.println("Host disconnected");
@@ -373,6 +369,10 @@ public class Session {
                         done = true;
                         player.writeToPlayer(new CorrectAnswerAlert());
                         correctGuesses++;
+                        if (correctGuesses == points.size() - 1) {
+                            timer.cancel();
+                            task.run();
+                        }
                     } else {
                         System.out.println("incorrect");
                         player.writeToPlayer(new IncorrectAnswerAlert());

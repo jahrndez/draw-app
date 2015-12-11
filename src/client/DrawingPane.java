@@ -16,6 +16,7 @@ import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
+import com.sun.tools.javac.comp.Flow;
 import interfaces.DrawInfo;
 import interfaces.LobbyMessage;
 import interfaces.TurnEndAlert;
@@ -55,6 +56,7 @@ public class DrawingPane implements GameScreen, Runnable {
 
     private JLabel scores;
     private JLabel time;
+    private JLabel currentDrawer;
     private Set<String> beginningPlayers;
     private String username;
 
@@ -82,7 +84,7 @@ public class DrawingPane implements GameScreen, Runnable {
     }
 
     public static class DrawTimer implements ActionListener {
-        private long timeRemaining;
+        public long timeRemaining;
         private JLabel display;
 
         public DrawTimer(JLabel display, long seconds) {
@@ -119,6 +121,8 @@ public class DrawingPane implements GameScreen, Runnable {
         sb.append("</html>");
         scores.setText(sb.toString());
 
+        DrawTimer drawTimer = null;
+
         try {
             while(true) {
                 LobbyMessage message = (LobbyMessage) in.readObject();
@@ -142,15 +146,20 @@ public class DrawingPane implements GameScreen, Runnable {
                             STATE = State.DRAWING;
                             guess.setText(turnStartAlert.getWord());
                             guess.setEditable(false);
+                            currentDrawer.setText("You're drawing.");
+                            currentDrawer.updateUI();
                         } else {
 //                            System.out.println("I'm currently guessing");
                             STATE = State.GUESSING;
                             guess.setText("");
                             guess.setEditable(true);
+                            currentDrawer.setText("Drawing: " + Util.humanReadableUsername(turnStartAlert.getDrawerUsername()));
+                            currentDrawer.updateUI();
                         }
 
                         time.setText(turnStartAlert.getSeconds() + " Seconds Left");
-                        new Timer(1000, new DrawTimer(time, turnStartAlert.getSeconds())).start();
+                        drawTimer = new DrawTimer(time, turnStartAlert.getSeconds());
+                        new Timer(1000, drawTimer).start();
 
                         break;
 
@@ -193,7 +202,13 @@ public class DrawingPane implements GameScreen, Runnable {
                                         (int) guess.getLocationOnScreen().getX() + 10,
                                         (int) guess.getLocationOnScreen().getY() - 20);
                         p1.show();
-                        new Timer(2000, e -> p1.hide()).start();
+                        java.util.Timer t1 = new java.util.Timer();
+                        t1.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                p1.hide();
+                            }
+                        }, 2000);
                         guess.setEditable(false);
                         guess.setBackground(Color.green);
                         guess.setText(lastGuess);
@@ -209,13 +224,20 @@ public class DrawingPane implements GameScreen, Runnable {
                                         (int) guess.getLocationOnScreen().getX() + 10,
                                         (int) guess.getLocationOnScreen().getY() - 20);
                         p2.show();
-                        new Timer(2000, e -> p2.hide()).start();
+                        java.util.Timer t2 = new java.util.Timer();
+                        t2.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                p2.hide();
+                            }
+                        }, 2000);
                         guess.setBackground(new Color(250, 180, 180));
                         break;
 
                     case TURN_END:
-                        System.out.println("Server has ended the turn");
+//                        System.out.println("Server has ended the turn");
                         TurnEndAlert turnEndAlert = (TurnEndAlert) message;
+                        drawTimer.timeRemaining = 1;
                         List<Map.Entry> points = new ArrayList<>(turnEndAlert.getCurrentPoints().entrySet());
                         Collections.sort(points, (o1, o2) -> (Integer) o2.getValue() - (Integer) o1.getValue());
                         StringBuilder s = new StringBuilder();
@@ -230,13 +252,34 @@ public class DrawingPane implements GameScreen, Runnable {
                         }
                         s.append("</html>");
 
+                        if (STATE == State.GUESSING) {
+                            JLabel label = new JLabel("Correct word was \"" + turnEndAlert.getWord() + "\"");
+                            JPanel wordPanel = new JPanel();
+                            wordPanel.add(label, BorderLayout.CENTER);
+                            wordPanel.setPreferredSize(new Dimension(200, 30));
+                            Popup p3 = PopupFactory
+                                    .getSharedInstance()
+                                    .getPopup(gui,
+                                            wordPanel,
+                                            (int) (gui.getLocationOnScreen().getX() + gui.getWidth() - 50) / 2,
+                                            (int) (gui.getLocationOnScreen().getY() + gui.getHeight()) / 2);
+                            p3.show();
+                            java.util.Timer t3 = new java.util.Timer();
+                            t3.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    p3.hide();
+                                }
+                            }, 3000);
+                        }
+
                         guess.setBackground(Color.white);
                         if (STATE == State.GUESSING)
                             out.writeObject("");
                         else
                             out.writeObject(new DrawInfo());
                         scores.setText(s.toString());
-                        System.out.println(s.toString());
+//                        System.out.println(s.toString());
                         STATE = State.NO_GAME;
                         break;
 
@@ -347,10 +390,16 @@ public class DrawingPane implements GameScreen, Runnable {
             gui.add(output, BorderLayout.PAGE_END);
             clear(colorSample, currentColor);
             clear(canvasImage, Color.WHITE);
-            
+
             guess = new JTextArea();
             guess.addKeyListener(new GuessKeyListener());
             gui.add(guess, BorderLayout.PAGE_END);
+
+            currentDrawer = new JLabel();
+            JPanel drawerPanel = new JPanel(new BorderLayout());
+            currentDrawer.setHorizontalAlignment(SwingConstants.RIGHT);
+            drawerPanel.add(currentDrawer, BorderLayout.CENTER);
+            toolBar.add(drawerPanel);
 
             scores = new JLabel();
             scores.setPreferredSize(new Dimension(100, 640));
@@ -359,8 +408,6 @@ public class DrawingPane implements GameScreen, Runnable {
             time = new JLabel();
             JPanel panel = new JPanel(new BorderLayout());
             panel.add(time, BorderLayout.CENTER);
-//            time.setPreferredSize(new Dimension(100, 50));
-//            time.setText("0:00");
             time.setHorizontalAlignment(SwingConstants.RIGHT);
             toolBar.add(panel);
         }
