@@ -9,6 +9,7 @@ import java.util.Set;
 public class CreateJoinResponse implements Serializable {
     private Set<String> existingPlayers;
     private int sessionId;
+    private String username;
     private boolean successful;
 
     /**
@@ -22,10 +23,12 @@ public class CreateJoinResponse implements Serializable {
      * Successful CreateJoinResponse. Use this constructor to let client know game creation/joining was successful
      * @param existingPlayers Players already in the game session joined
      * @param sessionId Id of created/joined session
+     * @param username Username assigned to this player by the server
      */
-    public CreateJoinResponse(Set<String> existingPlayers, int sessionId) {
+    public CreateJoinResponse(Set<String> existingPlayers, int sessionId, String username) {
         this.existingPlayers = existingPlayers;
         this.sessionId = sessionId;
+        this.username = username;
         this.successful = true;
     }
 
@@ -39,5 +42,9 @@ public class CreateJoinResponse implements Serializable {
 
     public int getSessionId() {
         return this.sessionId;
+    }
+
+    public String username() {
+        return username;
     }
 }

@@ -8,19 +8,22 @@ import java.io.Serializable;
 public class TurnStartAlert extends LobbyMessage implements Serializable {
     private String drawerUsername;
     private String word;
+    private long seconds;
     private boolean isDrawer;
 
-    public TurnStartAlert(String drawerUsername) {
+    public TurnStartAlert(String drawerUsername, long seconds) {
         this.type = MessageType.TURN_START;
         this.drawerUsername = drawerUsername;
         this.isDrawer = false;
+        this.seconds = seconds;
     }
 
-    public TurnStartAlert(String drawerUsername, String word) {
+    public TurnStartAlert(String drawerUsername, String word, long seconds) {
         this.type = MessageType.TURN_START;
         this.drawerUsername = drawerUsername;
         this.word = word;
         this.isDrawer = true;
+        this.seconds = seconds;
     }
 
     public boolean isDrawer() {
@@ -33,5 +36,9 @@ public class TurnStartAlert extends LobbyMessage implements Serializable {
 
     public String getDrawerUsername() {
         return drawerUsername;
+    }
+
+    public long getSeconds() {
+        return seconds;
     }
 }

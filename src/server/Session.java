@@ -190,11 +190,11 @@ public class Session {
                 }
 
                 // Alert players of turn start
-                LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername());
+                LobbyMessage turnStart = new TurnStartAlert(currentDrawer.getUsername(), TURN_LENGTH / 1000);
                 communicateToAllExclude(turnStart, currentDrawer);
 
                 // Only provide word to drawer
-                LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word);
+                LobbyMessage turnStartDrawer = new TurnStartAlert(currentDrawer.getUsername(), word, TURN_LENGTH / 1000);
                 currentDrawer.setIsDrawer(true);
                 currentDrawer.writeToPlayer(turnStartDrawer);
 
@@ -243,6 +243,12 @@ public class Session {
                 	for (GuessHandler g : guessers)
                 		if (g.finished)
                 			done++;
+                }
+
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 
 //                System.out.println("Turn end");

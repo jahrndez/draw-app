@@ -27,6 +27,7 @@ public class Lobby implements GameScreen, Runnable {
     private JPanel players;
     private JButton start;
     private Set<String> currentPlayers;
+    private String username;
     private Socket socket;
     private DrawApp drawApp;
 
@@ -34,6 +35,7 @@ public class Lobby implements GameScreen, Runnable {
     	this.socket = socket;
     	this.drawApp = game;
     	currentPlayers = join.getExistingPlayers();
+        username = join.username();
     	if(currentPlayers.size() == 1)
     		setAsHost();
     }
@@ -61,7 +63,7 @@ public class Lobby implements GameScreen, Runnable {
     					out = new ObjectOutputStream(socket.getOutputStream());
 					GameStartAlert gameStartAlert = (GameStartAlert) message;
                     out.flush();
-    				drawApp.goToGame(in, out, gameStartAlert.getCurrentPlayers());
+    				drawApp.goToGame(in, out, gameStartAlert.getCurrentPlayers(), username);
     				break;
     			}
     			

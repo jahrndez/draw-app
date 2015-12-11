@@ -51,9 +51,10 @@ public class DrawApp implements Runnable {
         gameWindow.setVisible(true);
     }
     
-    public void goToGame(ObjectInputStream in, ObjectOutputStream out, Set<String> players) {
+    public void goToGame(ObjectInputStream in, ObjectOutputStream out, Set<String> players, String username) {
     	drawingPane.registerStreams(in, out);
         drawingPane.setBeginningPlayers(players);
+        drawingPane.setUsername(username);
     	new Thread(drawingPane).start();
     	gameWindow.setContentPane(drawingPane.getGui());
     	gameWindow.revalidate();

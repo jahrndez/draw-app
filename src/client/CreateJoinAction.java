@@ -18,22 +18,22 @@ import interfaces.PingResponse;
 public class CreateJoinAction implements ActionListener {
 	private static String JOIN = "Join Game";
 	private static String START = "Start New Game";
-	DrawApp game;
+	DrawApp drawApp;
 	
 	public CreateJoinAction(DrawApp gameWindow) {
-		game = gameWindow;
+		drawApp = gameWindow;
 	}
 	
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
     	try {
-            InetAddress address = InetAddress.getByName(game.getServerIP());
+            InetAddress address = InetAddress.getByName(drawApp.getServerIP());
             Socket socket = new Socket(address, 54777);
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             oos.flush();
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
 
-            String myUsername = game.getUsername();
+            String myUsername = drawApp.getUsername();
             CreateJoinRequest request = null;
             if (arg0.getActionCommand().equals(JOIN)) {
                 CreateJoinRequest ping = new CreateJoinRequest();
@@ -62,7 +62,7 @@ public class CreateJoinAction implements ActionListener {
 
             if (createJoinResponse.wasSuccessful()) {
                 System.out.println("Successfully in a game! Game id: " + createJoinResponse.getSessionId());
-                game.goToLobby(socket, createJoinResponse);
+                drawApp.goToLobby(socket, createJoinResponse);
             } else {
                 System.err.println("Failed");
                 return;

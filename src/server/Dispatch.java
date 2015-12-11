@@ -88,7 +88,7 @@ public class Dispatch {
                                             createJoinRequest.isNewGame())) {
                     // success
                     Set<String> existingPlayers = session.currentPlayerUsernames();
-                    objectOutputStream.writeObject(new CreateJoinResponse(existingPlayers, session.getSessionId()));
+                    objectOutputStream.writeObject(new CreateJoinResponse(existingPlayers, session.getSessionId(), username));
                 } else {
                     // failed
                     objectOutputStream.writeObject(new CreateJoinResponse());
