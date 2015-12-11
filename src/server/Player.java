@@ -64,7 +64,7 @@ public class Player {
     public Object readFromPlayer() throws IOException, ClassNotFoundException {
         if (objectInputStream == null) {
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
-            System.out.println("Creating input stream for player: " + username);
+//            System.out.println("Creating input stream for player: " + username);
         }
         
         return objectInputStream.readObject();

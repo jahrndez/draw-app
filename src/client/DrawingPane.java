@@ -434,8 +434,10 @@ public class DrawingPane implements GameScreen, Runnable {
 				lastGuess = g;
 
 				try {
-					if (g.length() > 0)
-						out.writeObject(g);
+					if (g.length() > 0) {
+                        out.writeObject(g);
+//                        System.out.println("Sent guess " + g + " to server.");
+                    }
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
