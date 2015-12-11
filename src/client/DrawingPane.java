@@ -8,7 +8,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.SocketException;
 import java.util.*;
 import java.util.List;
 
@@ -58,6 +57,8 @@ public class DrawingPane implements GameScreen, Runnable {
     private JLabel time;
     private Set<String> beginningPlayers;
     private String username;
+
+    private long startTime;
 
     private static State STATE;
 
@@ -137,12 +138,12 @@ public class DrawingPane implements GameScreen, Runnable {
                         imageLabel.repaint();
 
                         if (turnStartAlert.isDrawer()) {
-                            System.out.println("I'm currently the drawer");
+//                            System.out.println("I'm currently the drawer");
                             STATE = State.DRAWING;
                             guess.setText(turnStartAlert.getWord());
                             guess.setEditable(false);
                         } else {
-                            System.out.println("I'm currently guessing");
+//                            System.out.println("I'm currently guessing");
                             STATE = State.GUESSING;
                             guess.setText("");
                             guess.setEditable(true);
@@ -183,7 +184,8 @@ public class DrawingPane implements GameScreen, Runnable {
                         break;
 
                     case CORRECT_ANSWER:
-                        System.out.println("Correct Guess!");
+                        System.out.println("Latency (ms): " + Util.formatTime(System.nanoTime() - startTime));
+//                        System.out.println("Correct Guess!");
                         Popup p1 = PopupFactory
                                 .getSharedInstance()
                                 .getPopup(guess,
@@ -198,7 +200,8 @@ public class DrawingPane implements GameScreen, Runnable {
                         break;
 
                     case INCORRECT_ANSWER:
-                        System.out.println("Incorrect guess :(");
+                        System.out.println("Latency (ms): " + Util.formatTime(System.nanoTime() - startTime));
+//                        System.out.println("Incorrect guess :(");
                         Popup p2 = PopupFactory
                                 .getSharedInstance()
                                 .getPopup(guess,
@@ -475,6 +478,7 @@ public class DrawingPane implements GameScreen, Runnable {
 
 				try {
 					if (g.length() > 0) {
+                        startTime = System.nanoTime();
                         out.writeObject(g);
 //                        System.out.println("Sent guess " + g + " to server.");
                     }

@@ -367,7 +367,7 @@ public class Session {
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             }
             finished = true;
         }
