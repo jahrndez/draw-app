@@ -16,7 +16,6 @@ import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
-import com.sun.tools.javac.comp.Flow;
 import interfaces.DrawInfo;
 import interfaces.LobbyMessage;
 import interfaces.TurnEndAlert;
@@ -63,6 +62,8 @@ public class DrawingPane implements GameScreen, Runnable {
     private long startTime;
 
     private static State STATE;
+    
+    private List<JComponent> drawerComps;
 
     enum State {
         DRAWING,
@@ -148,6 +149,11 @@ public class DrawingPane implements GameScreen, Runnable {
                             guess.setEditable(false);
                             currentDrawer.setText("You're drawing.");
                             currentDrawer.updateUI();
+                            
+                            for (JComponent c : drawerComps) {
+                            	c.setVisible(true);
+                            	c.setEnabled(true);
+                            }
                         } else {
 //                            System.out.println("I'm currently guessing");
                             STATE = State.GUESSING;
@@ -155,6 +161,11 @@ public class DrawingPane implements GameScreen, Runnable {
                             guess.setEditable(true);
                             currentDrawer.setText("Drawing: " + Util.humanReadableUsername(turnStartAlert.getDrawerUsername()));
                             currentDrawer.updateUI();
+                            
+                            for (JComponent c : drawerComps) {
+                            	c.setVisible(false);
+                            	c.setEnabled(false);
+                            }
                         }
 
                         time.setText(turnStartAlert.getSeconds() + " Seconds Left");
@@ -299,6 +310,7 @@ public class DrawingPane implements GameScreen, Runnable {
     public JComponent getGui() {
         if (gui == null) {
             Map<Key, Object> hintsMap = new HashMap<>();
+            drawerComps = new ArrayList<>();
             hintsMap.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             hintsMap.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
             hintsMap.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -333,6 +345,7 @@ public class DrawingPane implements GameScreen, Runnable {
             colorButton.addActionListener(colorListener);
             colorButton.setIcon(new ImageIcon(colorSample));
             toolBar.add(colorButton);
+            drawerComps.add(colorButton);
 
             setColor(currentColor);
 
@@ -357,6 +370,8 @@ public class DrawingPane implements GameScreen, Runnable {
             strokeLabel.setDisplayedMnemonic('t');
             toolBar.add(strokeLabel);
             toolBar.add(strokeSize);
+            drawerComps.add(strokeLabel);
+            drawerComps.add(strokeSize);
 
             toolBar.addSeparator();
 
@@ -384,6 +399,7 @@ public class DrawingPane implements GameScreen, Runnable {
             JButton clearButton = new JButton("Clear");
             toolBar.add(clearButton);
             clearButton.addActionListener(clearListener);
+            drawerComps.add(clearButton);
 
             gui.add(toolBar, BorderLayout.PAGE_START);
 
