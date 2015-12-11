@@ -112,7 +112,13 @@ public class Session {
 
     public synchronized void shutDownSession() {
         SessionPool.getSessionPool().removeSession(getSessionId());
-        // TODO: possibly close each player's stream. What ramifications does that have if a player wants later join a different game?
+        for (Player p : points.keySet()) {
+            try {
+                p.shutDownConnections();
+            } catch (IOException e) {
+                System.out.println("Error shutting down connection for player " + p.getUsername());
+            }
+        }
     }
 
     /**
@@ -364,8 +370,6 @@ public class Session {
                 e.printStackTrace();
             }
             finished = true;
-//            System.out.println("Done handling guesses for player " + player.getUsername());
-//            System.out.println("\tisDrawer: " + player.isDrawer() + "; state: " + state);
         }
     }
 }

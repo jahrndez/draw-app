@@ -70,6 +70,12 @@ public class Player {
         return objectInputStream.readObject();
     }
 
+    public void shutDownConnections() throws IOException {
+        objectInputStream.close();
+        objectOutputStream.close();
+        socket.close();
+    }
+
     public boolean equals(Object o) {
         if (o instanceof Player) {
             Player p = (Player) o;

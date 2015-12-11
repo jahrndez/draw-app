@@ -241,10 +241,10 @@ public class DrawingPane implements GameScreen, Runnable {
                         return;
                 }
             }
-        } catch (SocketException e) {
+        } catch (IOException e) {
             System.err.println("Disconnect from Server");
-            e.printStackTrace();
-        } catch (ClassNotFoundException | IOException e) {
+//            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
 
