@@ -1,7 +1,6 @@
 package client;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -110,7 +109,18 @@ public class Lobby implements GameScreen, Runnable {
         	GridBagConstraints gbc = new GridBagConstraints();
             
             updatePlayerList();
+
+            JLabel label = new JLabel("<html><br><center><b>Rules</b></center><br>"
+                    + "First correct guess gets <b>2</b> points.<br><br>"
+                    + "Subsequent correct guesses get <b>1</b> point each.<br><br>"
+                    + "Drawer earns <b>2</b> points if there is a single correct guess.<br><br>"
+                    + "Drawer earns <b>1</b> point if there are two or more correct guesses.<br><br><br>"
+                    + "First to <b>15</b> points wins."
+                    + "</html>");
+            label.setPreferredSize(new Dimension(300, 300));
             gui.add(players, gbc);
+            gbc.gridy = 5;
+            gui.add(label, gbc);
             
             gbc.gridy = 1;
             if (host) {

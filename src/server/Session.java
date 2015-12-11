@@ -34,7 +34,7 @@ import interfaces.TurnStartAlert;
  * Represents a single game session (single lobby)
  */
 public class Session {
-    public static final long TURN_LENGTH = 1000 * 60; // millis
+    public static final long TURN_LENGTH = 1000 * 15; // millis
     public static final int POINTS_FOR_WIN = 15;
 
     private final int sessionId;
@@ -44,6 +44,8 @@ public class Session {
     private Player currentDrawer;
     private Queue<Player> turnOrder;
     private Queue<Guess> guessQueue;
+
+    private int correctGuesses;
 
     public enum SessionState {
         PREGAME,    // before game starts
@@ -151,6 +153,7 @@ public class Session {
             while (!winnerExists) {
                 currentDrawer = turnOrder.remove();
                 turnOrder.add(currentDrawer);
+                correctGuesses = 0;
                 System.out.println("Turn start. Drawer: " + currentDrawer.getUsername());
 
                 state = SessionState.GUESSING;
@@ -159,7 +162,7 @@ public class Session {
 
                 AtomicBoolean isTurnOver = new AtomicBoolean(false);
                 Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
+                TimerTask task = new TimerTask() {
                     @Override
                     public void run() {
                         isTurnOver.set(true);
@@ -171,12 +174,12 @@ public class Session {
                         // Map<Player, Integer>  ->  Map<String, Integer>
                         Map<String, Integer> currentPoints =
                                 points
-                                .entrySet()
-                                .stream()
-                                .collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
+                                        .entrySet()
+                                        .stream()
+                                        .collect(Collectors.toMap(e -> e.getKey().getUsername(), Map.Entry::getValue));
 
                         // Alert all players that the turn has ended and send current points of all players
-                        LobbyMessage turnEnd = new TurnEndAlert(currentPoints);
+                        LobbyMessage turnEnd = new TurnEndAlert(currentPoints, word);
                         try {
 //                            System.out.println("Communicating to players that the turn has ended.");
                             communicateToAll(turnEnd);
@@ -186,7 +189,9 @@ public class Session {
                         }
 //                        System.out.println("Turn end");
                     }
-                }, TURN_LENGTH);
+                };
+
+                timer.schedule(task, TURN_LENGTH);
 
                 // Empty out guess queue
                 guessQueue = new ConcurrentLinkedQueue<>();
@@ -225,6 +230,12 @@ public class Session {
                         }
 
                         communicateToAllExclude((DrawInfo) drawInfo, currentDrawer);
+
+                        // End the game when everyone has guessed correctly. Hacky solution since it relies on drawer input to reach this control point
+                        if (correctGuesses == points.size() - 1) {
+                            timer.cancel();
+                            task.run();
+                        }
                     } catch (SocketException e) {
                         //TODO: Better fail case for when the host disconnects
                         System.out.println("Host disconnected");
@@ -252,7 +263,7 @@ public class Session {
                 }
 
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -361,6 +372,7 @@ public class Session {
                     	System.out.println("correct");
                         done = true;
                         player.writeToPlayer(new CorrectAnswerAlert());
+                        correctGuesses++;
                     } else {
                         System.out.println("incorrect");
                         player.writeToPlayer(new IncorrectAnswerAlert());
