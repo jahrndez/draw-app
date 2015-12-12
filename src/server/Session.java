@@ -152,6 +152,7 @@ public class Session {
 
             boolean winnerExists = false; // true when some player hits POINTS_FOR_WIN
 
+            Set<String> winners = new HashSet<>();
             while (!winnerExists) {
                 currentDrawer = turnOrder.remove();
                 turnOrder.add(currentDrawer);
@@ -245,7 +246,7 @@ public class Session {
                 for (Map.Entry entry : points.entrySet()) {
                     if ((Integer) entry.getValue() >= POINTS_FOR_WIN) {
                         winnerExists = true;
-                        break;
+                        winners.add(((Player)entry.getKey()).getUsername());
                     }
                 }
                 
@@ -268,7 +269,7 @@ public class Session {
             }
 
             state = SessionState.ENDED;
-            communicateToAll(new GameEndAlert());
+            communicateToAll(new GameEndAlert(winners));
 
         } catch (EOFException e) {
             System.out.println("Player quit. Ending game.");

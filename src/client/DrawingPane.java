@@ -16,10 +16,7 @@ import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeListener;
 
-import interfaces.DrawInfo;
-import interfaces.LobbyMessage;
-import interfaces.TurnEndAlert;
-import interfaces.TurnStartAlert;
+import interfaces.*;
 
 /**
  * Serves as the pane on which 2D graphics will be displayed.
@@ -149,10 +146,10 @@ public class DrawingPane implements GameScreen, Runnable {
                             guess.setEditable(false);
                             currentDrawer.setText("You're drawing.");
                             currentDrawer.updateUI();
-                            
+
                             for (JComponent c : drawerComps) {
-                            	c.setVisible(true);
-                            	c.setEnabled(true);
+                                c.setVisible(true);
+                                c.setEnabled(true);
                             }
                         } else {
 //                            System.out.println("I'm currently guessing");
@@ -161,10 +158,10 @@ public class DrawingPane implements GameScreen, Runnable {
                             guess.setEditable(true);
                             currentDrawer.setText("Drawing: " + Util.humanReadableUsername(turnStartAlert.getDrawerUsername()));
                             currentDrawer.updateUI();
-                            
+
                             for (JComponent c : drawerComps) {
-                            	c.setVisible(false);
-                            	c.setEnabled(false);
+                                c.setVisible(false);
+                                c.setEnabled(false);
                             }
                         }
 
@@ -295,6 +292,20 @@ public class DrawingPane implements GameScreen, Runnable {
                         break;
 
                     case GAME_END:
+                        GameEndAlert gameEndAlert = (GameEndAlert) message;
+                        StringBuilder b = new StringBuilder();
+                        sb.append("<html>The game ended.<br>Winners are:<br>");
+                        for (String st : gameEndAlert.getWinners()) {
+                            b.append("\t").append(Util.humanReadableUsername(st)).append("<br>");
+                        }
+
+                        b.append("</html>");
+
+                        JPanel panel = new JPanel();
+                        panel.add(new JLabel(b.toString()));
+
+                        JOptionPane.showMessageDialog(null, panel, "Game Over", JOptionPane.INFORMATION_MESSAGE);
+                        System.exit(0);
                         return;
                 }
             }
